@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+:root {
+  --p5r-red: #E31C34;
+  --p5r-yellow: #FFD32A;
+  --p5r-black: #0D0D0D;
+  --p5r-dark: #1A1A1A;
+  --p5r-gray: #2D2D2D;
+  --p5r-light: #F5F5F5;
+}
+
+@theme inline {
+  --color-p5r-red: var(--p5r-red);
+  --color-p5r-yellow: var(--p5r-yellow);
+  --color-p5r-black: var(--p5r-black);
+  --color-p5r-dark: var(--p5r-dark);
+  --color-p5r-gray: var(--p5r-gray);
+  --color-p5r-light: var(--p5r-light);
+  --font-heading: var(--font-heading), sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--p5r-black);
+  color: var(--p5r-light);
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), sans-serif;
+  letter-spacing: 0.05em;
+}
+
+::selection {
+  background: var(--p5r-red);
+  color: white;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--p5r-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--p5r-gray);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--p5r-red);
+}
+
+.neon-glow {
+  text-shadow: 
+    0 0 5px var(--p5r-red),
+    0 0 10px var(--p5r-red),
+    0 0 20px var(--p5r-red);
+}
+
+.card-hover {
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(227, 28, 52, 0.3);
+}
+
+.resist-weak { color: #E74C3C; }
+.resist-resist { color: #27AE60; }
+.resist-repel { color: #F1C40F; }
+.resist-absorb { color: #3498DB; }
+.resist-null { color: #9B59B6; }
+.resist-none { color: #7F8C8D; }
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px var(--p5r-red); }
+  50% { box-shadow: 0 0 20px var(--p5r-red), 0 0 30px var(--p5r-red); }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fusion-card {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+.fusion-card:nth-child(1) { animation-delay: 0ms; }
+.fusion-card:nth-child(2) { animation-delay: 50ms; }
+.fusion-card:nth-child(3) { animation-delay: 100ms; }
+.fusion-card:nth-child(4) { animation-delay: 150ms; }
+.fusion-card:nth-child(5) { animation-delay: 200ms; }
+
+.input-focus:focus {
+  box-shadow: 0 0 0 3px rgba(227, 28, 52, 0.3);
+}

@@ -1,13 +1,39 @@
 {
-  "name": "p5r",
+  "name": "p5r-guide",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "scrape": "node scripts/scraper.js",
+    "scrape:detail": "node scripts/scrape-detail.js",
+    "export": "node scripts/export-json.js",
+    "db:init": "node scripts/db/init.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.30.2"
+  "dependencies": {
+    "axios": "^1.14.0",
+    "cheerio": "^1.0.0",
+    "next": "16.2.2",
+    "opencc-js": "^1.0.5",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "sql.js": "^1.11.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.2",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^2.0.0"
+  }
 }
