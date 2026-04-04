@@ -368,24 +368,24 @@ function sortPaths(paths: FusionPath[], options: FindFusionPathsOptions): Fusion
   if (options.requiredSkills && options.requiredSkills.length > 0) {
     const requiredSkills = options.requiredSkills;
     filtered = filtered.filter(p => {
+      // Collect ALL skills from ALL personas in the entire path
+      const allSkillsInPath = new Set<string>();
       for (const step of p.steps) {
         const allPersonasInStep = [step.personaA, step.personaB, step.resultPersona];
-        const hasSkill = allPersonasInStep.some(ing => 
-          ing?.skills?.some(s => {
-            const skillName = s.name;
-            const skillNameTW = (s as any).name_tw || '';
-            // Exact match or the filter is a prefix of the skill
-            return requiredSkills.some(rs => 
-              skillName === rs || 
-              skillNameTW === rs ||
-              skillName.startsWith(rs) ||
-              skillNameTW.startsWith(rs)
-            );
-          })
-        );
-        if (hasSkill) return true;
+        for (const ing of allPersonasInStep) {
+          for (const s of ing?.skills || []) {
+            allSkillsInPath.add(s.name);
+            if ((s as any).name_tw) allSkillsInPath.add((s as any).name_tw);
+          }
+        }
       }
-      return false;
+      
+      // Check if ALL required skills are present in the path
+      return requiredSkills.every(rs => 
+        [...allSkillsInPath].some(skill => 
+          skill === rs || skill.startsWith(rs)
+        )
+      );
     });
   }
 
