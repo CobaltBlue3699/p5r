@@ -55,7 +55,7 @@ export default function RootLayout({
   return (
     <html lang="zh" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎭</text></svg>" />
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path fill='%23E31C34' d='M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14 14-6.268 14-14S23.732 2 16 2zm0 2c6.627 0 12 5.373 12 12s-5.373 12-12 12S4 22.627 4 16 9.373 4 16 4z'/><path fill='white' d='M10 10c0-1.5 2-3 6-3s6 1.5 6 3c0 1-1 2-2 2h-8c-1 0-2-1-2-2z'/><circle cx='12' cy='14' r='1.5' fill='white'/><circle cx='20' cy='14' r='1.5' fill='white'/><path fill='%23E31C34' d='M12 18c0 1 .5 2 1.5 2h5c1 0 1.5-1 1.5-2l-1-4h-6l-1 4z'/></svg>" />
       </head>
       <body className={`min-h-screen flex flex-col ${chakraPetch.className}`}>
         <Navigation />
