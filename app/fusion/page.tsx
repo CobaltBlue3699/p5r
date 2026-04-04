@@ -90,10 +90,28 @@ export default function FusionPage() {
   const [modalPersona, setModalPersona] = useState<Persona | null>(null);
   const [sortBy, setSortBy] = useState<'level' | 'name'>('level');
   const [skillSearchResults, setSkillSearchResults] = useState<string[]>([]);
+  const [traitSearchQuery, setTraitSearchQuery] = useState('');
+  const [traitSearchResults, setTraitSearchResults] = useState<string[]>([]);
 
   const ui = UI[lang];
   const allPersonas = useMemo(() => getFusiblePersonas(), []);
   
+  const allTraits = useMemo(() => {
+    const seen = new Set<string>();
+    return allPersonas
+      .filter(p => {
+        const traitValue = lang === 'tw' && p.trait_tw ? p.trait_tw : (p.trait || '');
+        if (!traitValue || seen.has(traitValue)) return false;
+        seen.add(traitValue);
+        return true;
+      })
+      .map(p => ({
+        personaName: getPersonaName(p),
+        traitValue: lang === 'tw' && p.trait_tw ? p.trait_tw : (p.trait || ''),
+        level: p.level
+      }));
+  }, [allPersonas, lang]);
+
   const sortedPersonas = useMemo(() => {
     const sorted = [...allPersonas];
     if (sortBy === 'level') {
@@ -170,10 +188,11 @@ export default function FusionPage() {
     
     setTimeout(() => {
       const foundPaths = findFusionPaths(selectedPersona.name_cn, {
-        maxSteps: 3,
+        maxSteps: 5,
         requiredSkills: selectedSkills.length > 0 ? selectedSkills : undefined,
         requiredTrait: selectedTrait || undefined
       });
+      
       setPaths(foundPaths);
       setLoading(false);
     }, 50);
@@ -393,80 +412,167 @@ export default function FusionPage() {
 
             {showSkillFilter && (
               <div className="bg-[var(--p5r-black)] rounded-xl p-4 border border-[var(--p5r-gray)]">
-                <div className="flex items-center gap-2 mb-3">
-                  <input
-                    type="text"
-                    placeholder="搜尋技能..."
-                    className="flex-1 px-3 py-2 bg-[var(--p5r-dark)] border border-[var(--p5r-gray)] rounded-lg text-[var(--p5r-light)] placeholder-[var(--p5r-gray)] focus:border-[var(--p5r-red)] focus:outline-none text-sm"
-                    onChange={(e) => {
-                      const q = e.target.value.toLowerCase();
-                      const filtered = allPersonas.flatMap(p => p.skills).filter(s => {
-                        const name = getSkillName(s).toLowerCase();
-                        return name.includes(q);
-                      });
-                      const seen = new Set<string>();
-                      const results = filtered.filter(s => {
-                        const name = getSkillName(s);
-                        if (seen.has(name)) return false;
-                        seen.add(name);
-                        return true;
-                      }).slice(0, 50).map(s => getSkillName(s));
-                      setSkillSearchResults(results);
-                    }}
-                  />
+                <div className="space-y-3">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="搜尋技能..."
+                      className="w-full px-4 py-3 bg-[var(--p5r-dark)] border border-[var(--p5r-gray)] rounded-lg text-[var(--p5r-light)] placeholder-[var(--p5r-gray)] focus:border-[var(--p5r-red)] focus:outline-none text-base"
+                      onChange={(e) => {
+                        const q = e.target.value.toLowerCase();
+                        const filtered = allPersonas.flatMap(p => p.skills).filter(s => {
+                          const name = getSkillName(s).toLowerCase();
+                          return name.includes(q);
+                        });
+                        const seen = new Set<string>();
+                        const results = filtered.filter(s => {
+                          const name = getSkillName(s);
+                          if (seen.has(name)) return false;
+                          seen.add(name);
+                          return true;
+                        }).slice(0, 30).map(s => getSkillName(s));
+                        setSkillSearchResults(results);
+                      }}
+                    />
+                    {selectedSkills.length > 0 && (
+                      <button
+                        onClick={() => setSelectedSkills([])}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-xs bg-[var(--p5r-gray)] rounded hover:bg-[var(--p5r-red)] transition-colors"
+                      >
+                        清除全部
+                      </button>
+                    )}
+                  </div>
+                  
                   {selectedSkills.length > 0 && (
-                    <button
-                      onClick={() => setSelectedSkills([])}
-                      className="px-2 py-1 text-xs bg-[var(--p5r-gray)] rounded hover:bg-[var(--p5r-red)] transition-colors whitespace-nowrap"
-                    >
-                      清除全部
-                    </button>
+                    <div className="flex flex-wrap gap-2 p-3 bg-[var(--p5r-red)]/10 border border-[var(--p5r-red)]/30 rounded-lg">
+                      {selectedSkills.map(skill => (
+                        <button
+                          key={skill}
+                          onClick={() => toggleSkill(skill)}
+                          className="px-3 py-1.5 text-sm bg-[var(--p5r-red)] text-white rounded-lg flex items-center gap-1.5 hover:bg-[var(--p5r-red)]/80 transition-colors"
+                        >
+                          {skill}
+                          <span className="text-xs">✕</span>
+                        </button>
+                      ))}
+                    </div>
                   )}
-                </div>
-                <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto">
-                  {(skillSearchResults.length > 0 ? skillSearchResults : uniqueSkills).map(skill => (
-                    <button
-                      key={skill}
-                      onClick={() => toggleSkill(skill)}
-                      className={`px-3 py-1.5 text-sm rounded-lg transition-all duration-200 hover:scale-105 ${
-                        selectedSkills.includes(skill) 
-                          ? 'bg-[var(--p5r-red)] text-white shadow-lg shadow-[var(--p5r-red)]/30' 
-                          : 'bg-[var(--p5r-dark)] text-[var(--p5r-light)] border border-[var(--p5r-gray)] hover:border-[var(--p5r-red)]'
-                      }`}
-                    >
-                      {skill}
-                    </button>
-                  ))}
+                  
+                  <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto">
+                    {(skillSearchResults.length > 0 ? skillSearchResults : uniqueSkills).map(skill => (
+                      <button
+                        key={skill}
+                        onClick={() => toggleSkill(skill)}
+                        className={`px-3 py-1.5 text-sm rounded-lg transition-all duration-200 hover:scale-105 ${
+                          selectedSkills.includes(skill) 
+                            ? 'bg-[var(--p5r-red)] text-white shadow-lg shadow-[var(--p5r-red)]/30' 
+                            : 'bg-[var(--p5r-dark)] text-[var(--p5r-light)] border border-[var(--p5r-gray)] hover:border-[var(--p5r-red)]'
+                        }`}
+                      >
+                        {skill}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
             {showTraitFilter && (
               <div className="bg-[var(--p5r-black)] rounded-xl p-4 border border-[var(--p5r-gray)]">
-                <div className="flex flex-wrap gap-2 items-center">
-                  <span className="text-sm text-[var(--p5r-light)] mr-2">{ui.traitFilter}:</span>
-                  <select
-                    value={selectedTrait}
-                    onChange={(e) => setSelectedTrait(e.target.value)}
-                    className="px-3 py-2 bg-[var(--p5r-dark)] border border-[var(--p5r-gray)] rounded-lg text-[var(--p5r-light)] text-sm"
-                  >
-                    <option value="">{ui.noTraitFilter}</option>
-                    {allPersonas.filter(p => p.trait || p.trait_tw).slice(0, 50).map(p => {
-                      const traitValue = lang === 'tw' && p.trait_tw ? p.trait_tw : (p.trait || '');
-                      return (
-                        <option key={`${p.id}-${traitValue}`} value={traitValue}>
-                          {getPersonaName(p)}: {getPersonaTrait(p)}
-                        </option>
-                      );
-                    })}
-                  </select>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={traitSearchQuery}
+                      onChange={(e) => {
+                        const q = e.target.value.toLowerCase();
+                        setTraitSearchQuery(q);
+                        console.log('[Fusion] traitSearchQuery:', q);
+                        if (q.length > 0) {
+                          const filtered = allTraits.filter(t => 
+                            t.traitValue.toLowerCase().includes(q) ||
+                            t.personaName.toLowerCase().includes(q)
+                          ).slice(0, 20).map(t => t.traitValue);
+                          setTraitSearchResults(filtered);
+                          console.log('[Fusion] traitSearchResults:', filtered);
+                        } else {
+                          setTraitSearchResults([]);
+                        }
+                      }}
+                      placeholder={ui.selectTrait}
+                      className="w-full px-4 py-3 bg-[var(--p5r-dark)] border border-[var(--p5r-gray)] rounded-lg text-[var(--p5r-light)] placeholder-[var(--p5r-gray)] focus:border-[var(--p5r-red)] focus:outline-none text-base"
+                    />
+                    {traitSearchQuery && (
+                      <button
+                        onClick={() => { setTraitSearchQuery(''); setTraitSearchResults([]); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--p5r-gray)] hover:text-[var(--p5r-light)]"
+                      >
+                        ✕
+                      </button>
+                    )}
+                    {traitSearchResults.length > 0 && (
+                      <div className="absolute z-20 w-full mt-1 bg-[var(--p5r-black)] border border-[var(--p5r-gray)] rounded-lg max-h-64 overflow-y-auto shadow-xl">
+                        {traitSearchResults.map((trait, idx) => {
+                          const owner = allTraits.find(t => t.traitValue === trait);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTrait(trait);
+                                setTraitSearchQuery('');
+                                setTraitSearchResults([]);
+                              }}
+                              className={`w-full px-4 py-3 text-left flex items-center justify-between hover:bg-[var(--p5r-gray)] transition-colors ${
+                                selectedTrait === trait ? 'bg-[var(--p5r-red)]/20' : ''
+                              }`}
+                            >
+                              <span className="text-[var(--p5r-light)] font-medium">{trait}</span>
+                              <span className="text-xs text-[var(--p5r-gray)]">{owner?.personaName} Lv{owner?.level}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  
                   {selectedTrait && (
-                    <button
-                      onClick={() => setSelectedTrait('')}
-                      className="px-2 py-1 text-xs bg-[var(--p5r-gray)] rounded hover:bg-[var(--p5r-red)] transition-colors"
-                    >
-                      {ui.clear}
-                    </button>
+                    <div className="flex items-center gap-2 p-3 bg-[var(--p5r-red)]/10 border border-[var(--p5r-red)]/30 rounded-lg">
+                      <span className="text-sm text-[var(--p5r-light)]">✓</span>
+                      <span className="text-sm text-[var(--p5r-red)] font-medium flex-1">{selectedTrait}</span>
+                      <button
+                        onClick={() => {
+                          setSelectedTrait('');
+                        }}
+                        className="px-2 py-1 text-xs bg-[var(--p5r-gray)] rounded hover:bg-[var(--p5r-red)] transition-colors"
+                      >
+                        {ui.clear}
+                      </button>
+                    </div>
+                  )}
+                  
+                  {allTraits.length > 0 && (
+                    <div>
+                      <p className="text-xs text-[var(--p5r-gray)] mb-2">熱門特性:</p>
+                      <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                        {allTraits.slice(0, 30).map((t, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setSelectedTrait(t.traitValue);
+                            }}
+                            className={`px-2 py-1 text-xs rounded transition-all duration-200 ${
+                              selectedTrait === t.traitValue
+                                ? 'bg-[var(--p5r-red)] text-white'
+                                : 'bg-[var(--p5r-dark)] text-[var(--p5r-light)] border border-[var(--p5r-gray)] hover:border-[var(--p5r-red)]'
+                            }`}
+                          >
+                            {t.traitValue}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

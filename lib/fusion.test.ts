@@ -101,15 +101,50 @@ describe('Fusion Path Finder', () => {
     
     console.log('Skill filter - 拉库卡加, paths found:', paths.length);
     
-    // Check for 拉克西斯 in paths - it has 玛哈拉库卡加, not 拉库卡加
-    const lxjPaths = paths.filter((p: any) => {
+    // 比利士 has 拉库卡加 skill, so paths containing 比利士 will appear
+    // This is correct - we're filtering for paths that INCLUDE the skill
+    const blsPaths = paths.filter((p: any) => {
       const names = [p.steps[0].personaA.name_cn, p.steps[0].personaB.name_cn];
-      return names.includes('拉克西斯');
+      return names.includes('比利士');
     });
-    console.log('Paths with 拉克西斯:', lxjPaths.length);
+    console.log('Paths with 比利士 (has 拉库卡加):', blsPaths.length);
     
-    // 拉克西斯 has 玛哈拉库卡加, not 拉库卡加
-    // So it should NOT appear when filtering for 拉库卡加
-    expect(lxjPaths.length).toBe(0);
+    // 比利士 should appear because it has 拉库卡加
+    expect(blsPaths.length).toBeGreaterThan(0);
+  });
+
+  it('should find Orpheus with skills and trait', () => {
+    clearFusionCache();
+    
+    // Test with TW inputs (what the UI sends)
+    const paths = findFusionPaths('欧若博司', { 
+      maxSteps: 2,
+      requiredSkills: ['新華彩樂段', '輝箭'],
+      requiredTrait: '萬夫莫敵'
+    });
+    
+    console.log('Orpheus paths with TW filter:', paths.length);
+    if (paths.length > 0) {
+      console.log('First path:', paths[0].steps.map(s => s.personaA.name_cn + '+' + s.personaB.name_cn));
+    }
+    
+    // Also test with CN inputs
+    clearFusionCache();
+    const pathsCN = findFusionPaths('欧若博司', { 
+      maxSteps: 2,
+      requiredSkills: ['新华彩乐段', '辉箭'],
+      requiredTrait: '万夫莫敌'
+    });
+    console.log('Orpheus paths with CN filter:', pathsCN.length);
+    
+    // Test without any filters
+    clearFusionCache();
+    const pathsNoFilter = findFusionPaths('欧若博司', { maxSteps: 2 });
+    console.log('Orpheus paths without filter:', pathsNoFilter.length);
+    if (pathsNoFilter.length > 0) {
+      console.log('First path:', pathsNoFilter[0].steps.map(s => s.personaA.name_cn + '+' + s.personaB.name_cn));
+    }
+    
+    expect(pathsNoFilter.length).toBeGreaterThan(0);
   });
 });

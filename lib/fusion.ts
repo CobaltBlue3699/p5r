@@ -2,6 +2,7 @@ import { type Persona, NON_FUSIBLE_PERSONAS } from './types';
 import { getFusionResult, getFusionResults } from './fusion-matrix';
 import { TREASURE_DEMONS, getTreasureModifier, type TreasureDemon } from './treasure-demons';
 import { getPersonasByArcana, getPersonas, getPersonaByName, getFusiblePersonas } from './persona-index';
+import { toTW, toCN } from './cn-tw';
 
 export interface FusionInput {
   personaA: Persona;
@@ -167,10 +168,16 @@ function canFusePersona(
 }
 
 function personaHasTrait(persona: Persona, traitFilter: string): boolean {
-  const traitCN = traitFilter;
-  const traitTW = traitFilter.replace(/热/g, '熱').replace(/统/g, '統');
   const traitValue = persona.trait || (persona as any).trait_tw;
-  return traitValue && (traitValue.includes(traitCN) || traitValue.includes(traitTW));
+  if (!traitValue) return false;
+  
+  const filterCN = toCN(traitFilter);
+  const filterTW = toTW(traitFilter);
+  
+  const traitCN = persona.trait || '';
+  const traitTW = (persona as any).trait_tw || '';
+  
+  return traitValue.includes(filterCN) || traitValue.includes(filterTW);
 }
 
 const pathCache = new Map<string, FusionPath[]>();
@@ -237,15 +244,19 @@ export function findFusionPaths(
   
   const reversePaths = findReverseFusionPaths(targetPersona, options);
   
-  // Always include reverse paths, even with filters
-  if (reversePaths.length > 0 && !options.requiredTrait) {
-    const sorted = sortPaths(reversePaths, options);
-    pathCache.set(cacheKey, sorted);
-    return sorted;
-  }
-  
   const allPersonas = getFusiblePersonas();
   const paths: FusionPath[] = [];
+  
+  // Always include reverse paths, even with filters
+  if (reversePaths.length > 0) {
+    if (!options.requiredTrait && !options.requiredSkills?.length) {
+      const sorted = sortPaths(reversePaths, options);
+      pathCache.set(cacheKey, sorted);
+      return sorted;
+    }
+    // If there's a trait or skill filter, include filtered reverse paths too
+    paths.push(...reversePaths);
+  }
   
   const bfsQueue: {
     current: Persona;
@@ -278,22 +289,48 @@ export function findFusionPaths(
     }
   }
 
-  if (!options.requiredTrait && paths.length > 0) {
+  if (!options.requiredTrait && (!options.requiredSkills || options.requiredSkills.length === 0) && paths.length > 0) {
     const sorted = sortPaths(paths, options);
     pathCache.set(cacheKey, sorted);
     return sorted;
   }
   
-  // BFS for multi-step paths - always run when there's a requiredTrait
-  if (maxSteps > 1) {
+  // BFS for multi-step paths - run when there's a requiredTrait OR requiredSkills
+  if (maxSteps > 1 && (options.requiredTrait || (options.requiredSkills && options.requiredSkills.length > 0))) {
     const traitFilter = options.requiredTrait || '';
-    // Start BFS from both: target arcana personas AND trait-holding personas
+    const skillsFilter = options.requiredSkills || [];
+    
+    // Helper to convert skill name to both CN and TW variants using opencc
+    const convertSkillName = (name: string) => {
+      return [name, toCN(name), toTW(name)];
+    };
+    
+    // Find personas that hold any of the required skills (CN or TW)
+    const skillHolders = new Set<string>();
+    if (skillsFilter.length > 0) {
+      for (const p of allPersonas) {
+        for (const s of p.skills || []) {
+          const skillName = s.name;
+          const skillNameTW = (s as any).name_tw || '';
+          for (const reqSkill of skillsFilter) {
+            const variants = convertSkillName(reqSkill);
+            if (variants.some(v => skillName === v || skillNameTW === v || skillName.startsWith(v) || skillNameTW.startsWith(v))) {
+              skillHolders.add(p.name_cn);
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Start BFS from: target arcana personas OR trait-holding personas OR skill-holding personas
     const startPersonas = allPersonas.filter(p => 
       p.arcana === targetPersona.arcana || 
-      (traitFilter && personaHasTrait(p, traitFilter))
+      (traitFilter && personaHasTrait(p, traitFilter)) ||
+      skillHolders.has(p.name_cn)
     );
     
-    console.log('[BFS] Starting from', startPersonas.length, 'personas (target arcana + trait holders)');
+    console.log('[BFS] Starting from', startPersonas.length, 'personas (target arcana + trait holders + skill holders)');
     
     for (const personaA of startPersonas) {
       bfsQueue.push({
@@ -332,25 +369,53 @@ export function findFusionPaths(
           targetPersona
         });
       } else if (result.resultPersona.arcana === targetPersona.arcana && result.resultPersona.id !== targetPersona.id) {
-        // Only add to BFS queue if we haven't reached max steps
+        // Same arcana - add to BFS queue to continue searching
         if (steps.length < maxSteps - 1) {
-          // Only add if the intermediate result could be useful for trait filter
-          if (!options.requiredTrait || personaHasTrait(result.resultPersona, options.requiredTrait)) {
-            const newVisited = new Set(visited);
-            newVisited.add(personaB.id.toString());
-            
-            bfsQueue.push({
-              current: result.resultPersona,
-              steps: [...steps, {
-                personaA: current,
-                personaB,
-                resultArcana: result.resultArcana,
-                resultPersona: result.resultPersona,
-                price: result.price
-              }],
-              visited: newVisited
-            });
-          }
+          const newVisited = new Set(visited);
+          newVisited.add(personaB.id.toString());
+          
+          bfsQueue.push({
+            current: result.resultPersona,
+            steps: [...steps, {
+              personaA: current,
+              personaB,
+              resultArcana: result.resultArcana,
+              resultPersona: result.resultPersona,
+              price: result.price
+            }],
+            visited: newVisited
+          });
+        }
+      } else if (options.requiredSkills?.length && steps.length < maxSteps - 1) {
+        // When there's a skill filter, also explore OTHER arcana paths that might lead to skills
+        const hasSkill = result.resultPersona.skills?.some(s => {
+          const skillName = s.name;
+          const skillNameTW = (s as any).name_tw || '';
+          const skillNameCN = toCN(skillName);
+          return options.requiredSkills!.some(rs => {
+            const rsCN = toCN(rs);
+            const rsTW = toTW(rs);
+            return skillName === rs || skillNameTW === rs || skillNameCN === rs ||
+                   skillName === rsCN || skillNameTW === rsCN || skillNameCN === rsCN ||
+                   skillName === rsTW || skillNameTW === rsTW || skillNameCN === rsTW;
+          });
+        }) || false;
+        
+        if (hasSkill) {
+          const newVisited = new Set(visited);
+          newVisited.add(personaB.id.toString());
+          
+          bfsQueue.push({
+            current: result.resultPersona,
+            steps: [...steps, {
+              personaA: current,
+              personaB,
+              resultArcana: result.resultArcana,
+              resultPersona: result.resultPersona,
+              price: result.price
+            }],
+            visited: newVisited
+          });
         }
       }
     }
@@ -368,7 +433,6 @@ function sortPaths(paths: FusionPath[], options: FindFusionPathsOptions): Fusion
   if (options.requiredSkills && options.requiredSkills.length > 0) {
     const requiredSkills = options.requiredSkills;
     filtered = filtered.filter(p => {
-      // Collect ALL skills from ALL personas in the entire path
       const allSkillsInPath = new Set<string>();
       for (const step of p.steps) {
         const allPersonasInStep = [step.personaA, step.personaB, step.resultPersona];
@@ -380,19 +444,19 @@ function sortPaths(paths: FusionPath[], options: FindFusionPathsOptions): Fusion
         }
       }
       
-      // Check if ALL required skills are present in the path
-      return requiredSkills.every(rs => 
-        [...allSkillsInPath].some(skill => 
-          skill === rs || skill.startsWith(rs)
-        )
-      );
+      return requiredSkills.every(rs => {
+        const rsCN = toCN(rs);
+        const rsTW = toTW(rs);
+        
+        return [...allSkillsInPath].some(skill => skill === rs || skill === rsCN || skill === rsTW);
+      });
     });
   }
 
   if (options.requiredTrait) {
     const traitInput = options.requiredTrait;
-    const traitCN = traitInput.replace(/熱/g, '热').replace(/統/g, '统');
-    const traitTW = traitInput.replace(/热/g, '熱').replace(/统/g, '統');
+    const traitCN = toCN(traitInput);
+    const traitTW = toTW(traitInput);
     
     filtered = filtered.filter(p => {
       for (const step of p.steps) {
