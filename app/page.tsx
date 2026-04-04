@@ -1,4 +1,10 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'P5R 攻略指南 | Persona 5 Royal 人格面具圖鑑與合成規劃',
+  description: 'Persona 5 Royal 完整攻略網站。包含人格面具圖鑑、属性抗性查詢、合成規劃工具、技能與特性篩選。',
+};
 
 export default function HomePage() {
   return (

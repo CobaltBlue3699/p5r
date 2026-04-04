@@ -18,8 +18,33 @@ const russoOne = Russo_One({
 });
 
 export const metadata: Metadata = {
-  title: "P5R 攻略指南",
-  description: "Persona 5 Royal 個人攻略網站",
+  title: "P5R 攻略指南 | Persona 5 Royal 人格面具圖鑑與合成規劃",
+  description: "Persona 5 Royal 完整攻略網站。包含人格面具圖鑑、属性抗性查詢、合成規劃工具、技能與特性篩選。支援簡體/繁體中文。",
+  keywords: ["P5R, Persona 5 Royal, 人格面具, 女神異聞錄, 攻略, 合成, fusion, persona, 遊戲攻略"],
+  authors: [{ name: "P5R Guide" }],
+  openGraph: {
+    title: "P5R 攻略指南 | Persona 5 Royal",
+    description: "Persona 5 Royal 完整攻略網站。包含人格面具圖鑑、合成規劃工具。",
+    url: "https://p5r.vercel.app",
+    siteName: "P5R 攻略指南",
+    locale: "zh_TW",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "P5R 攻略指南",
+    description: "Persona 5 Royal 完整攻略網站",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    languages: {
+      'zh-TW': 'https://p5r.guide',
+      'zh-CN': 'https://p5r.guide',
+    },
+  },
 };
 
 export default function RootLayout({
