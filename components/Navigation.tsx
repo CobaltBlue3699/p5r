@@ -30,11 +30,11 @@ export default function Navigation() {
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 text-[var(--p5r-red)] hover:text-[var(--p5r-yellow)] transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="w-8 h-8">
-              <circle cx="16" cy="16" r="14" fill="currentColor" opacity="0.2"/>
-              <circle cx="16" cy="16" r="10" fill="none" stroke="currentColor" strokeWidth="2.5"/>
-              <circle cx="12" cy="13" r="2" fill="currentColor"/>
-              <circle cx="20" cy="13" r="2" fill="currentColor"/>
-              <path d="M10 18c0 1.5 2.5 3 6 3s6-1.5 6-3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="16" cy="16" r="15" fill="currentColor" opacity="0.15"/>
+              <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="2.5"/>
+              <ellipse cx="12" cy="13" rx="2" ry="2.5" fill="currentColor"/>
+              <ellipse cx="20" cy="13" rx="2" ry="2.5" fill="currentColor"/>
+              <path d="M11 20c0 0 1.2 1.5 5 1.5s5-1.5 5-1.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
             <span className="text-xl font-bold" style={{ fontFamily: 'var(--font-heading)' }}>
               P5R
