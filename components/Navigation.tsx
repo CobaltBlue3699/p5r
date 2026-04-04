@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
-  { href: '/', label: '首页', icon: 'home' },
+  { href: '/', label: '首頁', icon: 'home' },
   { href: '/personas', label: '人格面具', icon: 'mask' },
-  { href: '/fusion', label: '合成规划', icon: 'fusion' },
+  { href: '/fusion', label: '合成規劃', icon: 'fusion' },
 ];
 
 export default function Navigation() {

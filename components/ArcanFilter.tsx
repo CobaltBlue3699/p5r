@@ -6,9 +6,10 @@ interface ArcanFilterProps {
   selected: string | null;
   onSelect: (arcana: string | null) => void;
   counts: Record<string, number>;
+  allLabel?: string;
 }
 
-export default function ArcanFilter({ selected, onSelect, counts }: ArcanFilterProps) {
+export default function ArcanFilter({ selected, onSelect, counts, allLabel = '全部' }: ArcanFilterProps) {
   const totalCount = Object.values(counts).reduce((a, b) => a + b, 0);
   
   return (
@@ -23,7 +24,7 @@ export default function ArcanFilter({ selected, onSelect, counts }: ArcanFilterP
           }
         `}
       >
-        全部 ({totalCount})
+        {allLabel} ({totalCount})
       </button>
       
       {ARCANA_ORDER.filter(arcana => counts[arcana] > 0).map((arcana) => (

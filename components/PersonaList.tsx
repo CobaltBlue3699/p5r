@@ -2,19 +2,38 @@
 
 import { useState, useMemo } from 'react';
 import { Persona } from '@/lib/types';
+import { getPersonaName, getPersonaArcana, getSkillName, type Language } from '@/lib/i18n';
 import PersonaCard from '@/components/PersonaCard';
 import ArcanFilter from '@/components/ArcanFilter';
 import PersonaModal from '@/components/PersonaModal';
 
 interface PersonaListProps {
   personas: Persona[];
+  lang?: Language;
 }
 
-export default function PersonaList({ personas }: PersonaListProps) {
+const UI_TW = {
+  searchPlaceholder: '搜尋人格面具...',
+  sortByLevel: '按等級排序',
+  sortByName: '按名稱排序',
+  allArcana: '全部',
+};
+
+const UI_CN = {
+  searchPlaceholder: '搜索人格面具...',
+  sortByLevel: '按等级排序',
+  sortByName: '按名称排序',
+  allArcana: '全部',
+};
+
+const UI = { tw: UI_TW, cn: UI_CN };
+
+export default function PersonaList({ personas, lang = 'tw' }: PersonaListProps) {
   const [selectedArcana, setSelectedArcana] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [sortBy, setSortBy] = useState<'level' | 'name'>('level');
+  const ui = UI[lang];
   
   const arcanaCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -44,7 +63,12 @@ export default function PersonaList({ personas }: PersonaListProps) {
     if (sortBy === 'level') {
       result = [...result].sort((a, b) => a.level - b.level);
     } else {
-      result = [...result].sort((a, b) => a.name_cn.localeCompare(b.name_cn, 'zh-CN'));
+      const locale = lang === 'tw' ? 'zh-TW' : 'zh-CN';
+      result = [...result].sort((a, b) => {
+        const nameA = getPersonaName(a);
+        const nameB = getPersonaName(b);
+        return nameA.localeCompare(nameB, locale);
+      });
     }
     
     return result;
@@ -65,7 +89,7 @@ export default function PersonaList({ personas }: PersonaListProps) {
             </svg>
             <input
               type="text"
-              placeholder="搜索人格面具..."
+              placeholder={ui.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-[var(--p5r-dark)] border border-[var(--p5r-gray)] rounded-xl text-[var(--p5r-light)] placeholder:text-[var(--p5r-light)] placeholder:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--p5r-red)] transition-all"
@@ -77,8 +101,8 @@ export default function PersonaList({ personas }: PersonaListProps) {
             onChange={(e) => setSortBy(e.target.value as 'level' | 'name')}
             className="px-4 py-3 bg-[var(--p5r-dark)] border border-[var(--p5r-gray)] rounded-xl text-[var(--p5r-light)] focus:outline-none focus:ring-2 focus:ring-[var(--p5r-red)] cursor-pointer"
           >
-            <option value="level">按等级排序</option>
-            <option value="name">按名称排序</option>
+            <option value="level">{ui.sortByLevel}</option>
+            <option value="name">{ui.sortByName}</option>
           </select>
         </div>
         
@@ -86,6 +110,7 @@ export default function PersonaList({ personas }: PersonaListProps) {
           selected={selectedArcana}
           onSelect={setSelectedArcana}
           counts={arcanaCounts}
+          allLabel={ui.allArcana}
         />
         
         <div className="text-sm text-[var(--p5r-light)] opacity-60">

@@ -19,7 +19,7 @@ const russoOne = Russo_One({
 
 export const metadata: Metadata = {
   title: "P5R 攻略指南",
-  description: "Persona 5 Royal 个人攻略网站",
+  description: "Persona 5 Royal 個人攻略網站",
 };
 
 export default function RootLayout({
