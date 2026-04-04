@@ -34,7 +34,8 @@ export default function PersonaList({ personas }: PersonaListProps) {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(p => 
-        p.name_cn.toLowerCase().includes(query) ||
+        p.name_cn?.toLowerCase().includes(query) ||
+        p.name_tw?.toLowerCase().includes(query) ||
         p.name_en?.toLowerCase().includes(query) ||
         p.name_jp?.toLowerCase().includes(query)
       );
