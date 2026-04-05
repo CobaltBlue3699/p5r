@@ -96,22 +96,26 @@ describe('Fusion Path Finder', () => {
     expect(pathsWithInitialSkill.length).toBeGreaterThan(0);
   });
 
-  it('should filter paths by requiredSkill - 拉库卡加', () => {
+  it('should filter paths by requiredSkill - skill must be in final result', () => {
     clearFusionCache();
-    const paths = findFusionPaths('瑟坦特', { maxSteps: 1, requiredSkills: ['拉库卡加', '拉庫卡加'] });
     
-    console.log('Skill filter - 拉库卡加, paths found:', paths.length);
+    // Test 1: 瑟坦特 doesn't have 拉库卡加, so should return 0 paths
+    const paths = findFusionPaths('瑟坦特', { maxSteps: 1, requiredSkills: ['拉库卡加'] });
+    console.log('Skill filter - 拉库卡加 for 瑟坦特:', paths.length);
+    expect(paths.length).toBe(0);
     
-    // 比利士 has 拉库卡加 skill, so paths containing 比利士 will appear
-    // This is correct - we're filtering for paths that INCLUDE the skill
-    const blsPaths = paths.filter((p: any) => {
-      const names = [p.steps[0].personaA.name_cn, p.steps[0].personaB.name_cn];
-      return names.includes('比利士');
+    // Test 2: 朱雀 has 芙雷 as an inheritable skill, so should find paths
+    clearFusionCache();
+    const pathsWithFuray = findFusionPaths('朱雀', { maxSteps: 1, requiredSkills: ['芙雷'] });
+    console.log('Skill filter - 芙雷 for 朱雀:', pathsWithFuray.length);
+    expect(pathsWithFuray.length).toBeGreaterThan(0);
+    
+    // Verify that the skill is actually in the final result (朱雀)
+    const hasSkillInResult = pathsWithFuray.some(p => {
+      return p.steps[0].resultPersona.skills.some(s => s.name === '芙雷');
     });
-    console.log('Paths with 比利士 (has 拉库卡加):', blsPaths.length);
-    
-    // 比利士 should appear because it has 拉库卡加
-    expect(blsPaths.length).toBeGreaterThan(0);
+    console.log('朱雀 has 芙雷 in result:', hasSkillInResult);
+    expect(hasSkillInResult).toBe(true);
   });
 
   it('should debug fusion matrix for 月亮+愚者', () => {

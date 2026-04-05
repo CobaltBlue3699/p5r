@@ -433,22 +433,19 @@ function sortPaths(paths: FusionPath[], options: FindFusionPathsOptions): Fusion
   if (options.requiredSkills && options.requiredSkills.length > 0) {
     const requiredSkills = options.requiredSkills;
     filtered = filtered.filter(p => {
-      const allSkillsInPath = new Set<string>();
-      for (const step of p.steps) {
-        const allPersonasInStep = [step.personaA, step.personaB, step.resultPersona];
-        for (const ing of allPersonasInStep) {
-          for (const s of ing?.skills || []) {
-            allSkillsInPath.add(s.name);
-            if ((s as any).name_tw) allSkillsInPath.add((s as any).name_tw);
-          }
-        }
+      // Check if the FINAL target persona has all required skills
+      // (not just any persona in the path)
+      const targetSkills = new Set<string>();
+      for (const s of p.targetPersona.skills || []) {
+        targetSkills.add(s.name);
+        if ((s as any).name_tw) targetSkills.add((s as any).name_tw);
       }
       
       return requiredSkills.every(rs => {
         const rsCN = toCN(rs);
         const rsTW = toTW(rs);
         
-        return [...allSkillsInPath].some(skill => skill === rs || skill === rsCN || skill === rsTW);
+        return [...targetSkills].some(skill => skill === rs || skill === rsCN || skill === rsTW);
       });
     });
   }
