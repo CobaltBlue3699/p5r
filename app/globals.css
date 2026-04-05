@@ -68,6 +68,45 @@ h1, h2, h3, h4, h5, h6 {
     0 0 20px var(--p5r-red);
 }
 
+.p5r-tilt {
+  transform: rotate(-1deg);
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.p5r-tilt:hover {
+  transform: rotate(0deg) scale(1.02);
+  box-shadow: 0 0 15px var(--p5r-red);
+}
+
+.p5r-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.p5r-button:hover {
+  box-shadow: 0 0 20px var(--p5r-red), 0 0 40px var(--p5r-red);
+  transform: scale(1.05) rotate(-1deg);
+}
+
+.p5r-button:active {
+  transform: scale(0.95);
+}
+
+@keyframes star-spin {
+  0% { transform: rotate(0deg) scale(1); opacity: 1; }
+  50% { transform: rotate(180deg) scale(1.2); opacity: 0.7; }
+  100% { transform: rotate(360deg) scale(1); opacity: 1; }
+}
+
+.star-loader {
+  width: 40px;
+  height: 40px;
+  background: var(--p5r-red);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  animation: star-spin 1.5s infinite ease-in-out;
+}
+
 .card-hover {
   transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
 }

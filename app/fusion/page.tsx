@@ -16,6 +16,7 @@ import {
   type Language 
 } from '@/lib/i18n';
 import PersonaModal from '@/components/PersonaModal';
+import FilterModal from '@/components/FilterModal';
 
 const UI_TW = {
   title: '人格面具合成規劃',
@@ -91,9 +92,7 @@ export default function FusionPage() {
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [paths, setPaths] = useState<FusionPath[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showSkillFilter, setShowSkillFilter] = useState(false);
-  const [showTraitFilter, setShowTraitFilter] = useState(false);
-  const [showPersonaFilter, setShowPersonaFilter] = useState(false);
+  const [modalType, setModalType] = useState<'skill' | 'trait' | 'persona' | null>(null);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedTrait, setSelectedTrait] = useState('');
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
@@ -396,290 +395,80 @@ export default function FusionPage() {
             )}
 
               <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => setShowSkillFilter(!showSkillFilter)}
-                className={`px-4 py-2.5 rounded-lg border transition-all duration-200 text-sm font-medium hover:scale-105 active:scale-95 ${
-                  showSkillFilter 
-                    ? 'bg-[var(--p5r-red)] border-[var(--p5r-red)] text-white shadow-lg shadow-[var(--p5r-red)]/30' 
-                    : 'border-[var(--p5r-gray)] text-[var(--p5r-light)] hover:border-[var(--p5r-red)] hover:shadow-lg hover:shadow-[var(--p5r-red)]/20'
-                }`}
-              >
-                {ui.skillFilter} {selectedSkills.length > 0 && `(${selectedSkills.length})`}
-              </button>
+                <button
+                  onClick={() => setModalType('skill')}
+                  className={`px-4 py-2.5 rounded-lg border transition-all duration-200 text-sm font-medium hover:scale-105 active:scale-95 ${
+                    selectedSkills.length > 0
+                      ? 'bg-[var(--p5r-red)] border-[var(--p5r-red)] text-white shadow-lg shadow-[var(--p5r-red)]/30' 
+                      : 'border-[var(--p5r-gray)] text-[var(--p5r-light)] hover:border-[var(--p5r-red)] hover:shadow-lg hover:shadow-[var(--p5r-red)]/20'
+                  }`}
+                >
+                  {ui.skillFilter} {selectedSkills.length > 0 && `(${selectedSkills.length})`}
+                </button>
 
-              <button
-                onClick={() => setShowTraitFilter(!showTraitFilter)}
-                className={`px-4 py-2.5 rounded-lg border transition-all duration-200 text-sm font-medium hover:scale-105 active:scale-95 ${
-                  showTraitFilter 
-                    ? 'bg-[var(--p5r-red)] border-[var(--p5r-red)] text-white shadow-lg shadow-[var(--p5r-red)]/30' 
-                    : 'border-[var(--p5r-gray)] text-[var(--p5r-light)] hover:border-[var(--p5r-red)] hover:shadow-lg hover:shadow-[var(--p5r-red)]/20'
-                }`}
-              >
-                {ui.traitFilter} {selectedTrait && ' ✓'}
-              </button>
+                <button
+                  onClick={() => setModalType('trait')}
+                  className={`px-4 py-2.5 rounded-lg border transition-all duration-200 text-sm font-medium hover:scale-105 active:scale-95 ${
+                    selectedTrait
+                      ? 'bg-[var(--p5r-red)] border-[var(--p5r-red)] text-white shadow-lg shadow-[var(--p5r-red)]/30' 
+                      : 'border-[var(--p5r-gray)] text-[var(--p5r-light)] hover:border-[var(--p5r-red)] hover:shadow-lg hover:shadow-[var(--p5r-red)]/20'
+                  }`}
+                >
+                  {ui.traitFilter} {selectedTrait && ' ✓'}
+                </button>
 
-              <button
-                onClick={() => setShowPersonaFilter(!showPersonaFilter)}
-                className={`px-4 py-2.5 rounded-lg border transition-all duration-200 text-sm font-medium hover:scale-105 active:scale-95 ${
-                  showPersonaFilter 
-                    ? 'bg-[var(--p5r-red)] border-[var(--p5r-red)] text-white shadow-lg shadow-[var(--p5r-red)]/30' 
-                    : 'border-[var(--p5r-gray)] text-[var(--p5r-light)] hover:border-[var(--p5r-red)] hover:shadow-lg hover:shadow-[var(--p5r-red)]/20'
-                }`}
-              >
-                {ui.personaFilter} {selectedPersonas.length > 0 && `(${selectedPersonas.length})`}
-              </button>
+                <button
+                  onClick={() => setModalType('persona')}
+                  className={`px-4 py-2.5 rounded-lg border transition-all duration-200 text-sm font-medium hover:scale-105 active:scale-95 ${
+                    selectedPersonas.length > 0
+                      ? 'bg-[var(--p5r-red)] border-[var(--p5r-red)] text-white shadow-lg shadow-[var(--p5r-red)]/30' 
+                      : 'border-[var(--p5r-gray)] text-[var(--p5r-light)] hover:border-[var(--p5r-red)] hover:shadow-lg hover:shadow-[var(--p5r-red)]/20'
+                  }`}
+                >
+                  {ui.personaFilter} {selectedPersonas.length > 0 && `(${selectedPersonas.length})`}
+                </button>
 
-              <button
+                <button
                 onClick={handleFindPaths}
                 disabled={!selectedPersona || loading}
-                className="px-8 py-3 bg-[var(--p5r-red)] text-white font-bold rounded-xl hover:bg-[var(--p5r-red)]/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95 text-base shadow-lg hover:shadow-[var(--p5r-red)]/30"
+                className="px-8 py-3 bg-[var(--p5r-red)] text-white font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed text-base shadow-lg p5r-button"
               >
-                {loading ? ui.calculating : ui.findPaths}
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="star-loader scale-50" />
+                    <span>{ui.calculating}</span>
+                  </div>
+                ) : ui.findPaths}
               </button>
             </div>
 
-            {showSkillFilter && (
-              <div className="bg-[var(--p5r-black)] rounded-xl p-4 border border-[var(--p5r-gray)]">
-                <div className="space-y-3">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="搜尋技能..."
-                      className="w-full px-4 py-3 bg-[var(--p5r-dark)] border border-[var(--p5r-gray)] rounded-lg text-[var(--p5r-light)] placeholder-[var(--p5r-gray)] focus:border-[var(--p5r-red)] focus:outline-none text-base"
-                      onChange={(e) => {
-                        const q = e.target.value.toLowerCase();
-                        const filtered = allPersonas.flatMap(p => p.skills).filter(s => {
-                          const name = getSkillName(s).toLowerCase();
-                          return name.includes(q);
-                        });
-                        const seen = new Set<string>();
-                        const results = filtered.filter(s => {
-                          const name = getSkillName(s);
-                          if (seen.has(name)) return false;
-                          seen.add(name);
-                          return true;
-                        }).slice(0, 30).map(s => getSkillName(s));
-                        setSkillSearchResults(results);
-                      }}
-                    />
-                    {selectedSkills.length > 0 && (
-                      <button
-                        onClick={() => setSelectedSkills([])}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-xs bg-[var(--p5r-gray)] rounded hover:bg-[var(--p5r-red)] transition-colors"
-                      >
-                        清除全部
-                      </button>
-                    )}
-                  </div>
-                  
-                  {selectedSkills.length > 0 && (
-                    <div className="flex flex-wrap gap-2 p-3 bg-[var(--p5r-red)]/10 border border-[var(--p5r-red)]/30 rounded-lg">
-                      {selectedSkills.map(skill => (
-                        <button
-                          key={skill}
-                          onClick={() => toggleSkill(skill)}
-                          className="px-3 py-1.5 text-sm bg-[var(--p5r-red)] text-white rounded-lg flex items-center gap-1.5 hover:bg-[var(--p5r-red)]/80 transition-colors"
-                        >
-                          {skill}
-                          <span className="text-xs">✕</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto">
-                    {(skillSearchResults.length > 0 ? skillSearchResults : uniqueSkills).map(skill => (
-                      <button
-                        key={skill}
-                        onClick={() => toggleSkill(skill)}
-                        className={`px-3 py-1.5 text-sm rounded-lg transition-all duration-200 hover:scale-105 ${
-                          selectedSkills.includes(skill) 
-                            ? 'bg-[var(--p5r-red)] text-white shadow-lg shadow-[var(--p5r-red)]/30' 
-                            : 'bg-[var(--p5r-dark)] text-[var(--p5r-light)] border border-[var(--p5r-gray)] hover:border-[var(--p5r-red)]'
-                        }`}
-                      >
-                        {skill}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {showTraitFilter && (
-              <div className="bg-[var(--p5r-black)] rounded-xl p-4 border border-[var(--p5r-gray)]">
-                <div className="space-y-3">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={traitSearchQuery}
-                      onChange={(e) => {
-                        const q = e.target.value.toLowerCase();
-                        setTraitSearchQuery(q);
-                        console.log('[Fusion] traitSearchQuery:', q);
-                        if (q.length > 0) {
-                          const filtered = allTraits.filter(t => 
-                            t.traitValue.toLowerCase().includes(q) ||
-                            t.personaName.toLowerCase().includes(q)
-                          ).slice(0, 20).map(t => t.traitValue);
-                          setTraitSearchResults(filtered);
-                          console.log('[Fusion] traitSearchResults:', filtered);
-                        } else {
-                          setTraitSearchResults([]);
-                        }
-                      }}
-                      placeholder={ui.selectTrait}
-                      className="w-full px-4 py-3 bg-[var(--p5r-dark)] border border-[var(--p5r-gray)] rounded-lg text-[var(--p5r-light)] placeholder-[var(--p5r-gray)] focus:border-[var(--p5r-red)] focus:outline-none text-base"
-                    />
-                    {traitSearchQuery && (
-                      <button
-                        onClick={() => { setTraitSearchQuery(''); setTraitSearchResults([]); }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--p5r-gray)] hover:text-[var(--p5r-light)]"
-                      >
-                        ✕
-                      </button>
-                    )}
-                    {traitSearchResults.length > 0 && (
-                      <div className="absolute z-20 w-full mt-1 bg-[var(--p5r-black)] border border-[var(--p5r-gray)] rounded-lg max-h-64 overflow-y-auto shadow-xl">
-                        {traitSearchResults.map((trait, idx) => {
-                          const owner = allTraits.find(t => t.traitValue === trait);
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => {
-                                setSelectedTrait(trait);
-                                setTraitSearchQuery('');
-                                setTraitSearchResults([]);
-                              }}
-                              className={`w-full px-4 py-3 text-left flex items-center justify-between hover:bg-[var(--p5r-gray)] transition-colors ${
-                                selectedTrait === trait ? 'bg-[var(--p5r-red)]/20' : ''
-                              }`}
-                            >
-                              <span className="text-[var(--p5r-light)] font-medium">{trait}</span>
-                              <span className="text-xs text-[var(--p5r-gray)]">{owner?.personaName} Lv{owner?.level}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {selectedTrait && (
-                    <div className="flex items-center gap-2 p-3 bg-[var(--p5r-red)]/10 border border-[var(--p5r-red)]/30 rounded-lg">
-                      <span className="text-sm text-[var(--p5r-light)]">✓</span>
-                      <span className="text-sm text-[var(--p5r-red)] font-medium flex-1">{selectedTrait}</span>
-                      <button
-                        onClick={() => {
-                          setSelectedTrait('');
-                        }}
-                        className="px-2 py-1 text-xs bg-[var(--p5r-gray)] rounded hover:bg-[var(--p5r-red)] transition-colors"
-                      >
-                        {ui.clear}
-                      </button>
-                    </div>
-                  )}
-                  
-                  {allTraits.length > 0 && (
-                    <div>
-                      <p className="text-xs text-[var(--p5r-gray)] mb-2">熱門特性:</p>
-                      <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-                        {allTraits.slice(0, 30).map((t, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => {
-                              setSelectedTrait(t.traitValue);
-                            }}
-                            className={`px-2 py-1 text-xs rounded transition-all duration-200 ${
-                              selectedTrait === t.traitValue
-                                ? 'bg-[var(--p5r-red)] text-white'
-                                : 'bg-[var(--p5r-dark)] text-[var(--p5r-light)] border border-[var(--p5r-gray)] hover:border-[var(--p5r-red)]'
-                            }`}
-                          >
-                            {t.traitValue}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {showPersonaFilter && (
-              <div className="bg-[var(--p5r-black)] rounded-xl p-4 border border-[var(--p5r-gray)]">
-                <div className="space-y-3">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder={ui.selectPersona2}
-                      className="w-full px-4 py-3 bg-[var(--p5r-dark)] border border-[var(--p5r-gray)] rounded-lg text-[var(--p5r-light)] placeholder-[var(--p5r-gray)] focus:border-[var(--p5r-red)] focus:outline-none text-base"
-                      onChange={(e) => {
-                        const q = e.target.value.toLowerCase();
-                        const filtered = sortedPersonas.filter(p => 
-                          getPersonaName(p).toLowerCase().includes(q)
-                        ).slice(0, 30).map(p => getPersonaName(p));
-                        setPersonaSearchResults(filtered);
-                      }}
-                    />
-                    {selectedPersonas.length > 0 && (
-                      <button
-                        onClick={() => setSelectedPersonas([])}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--p5r-gray)] hover:text-[var(--p5r-light)]"
-                      >
-                        ✕
-                      </button>
-                    )}
-                    {personaSearchResults.length > 0 && (
-                      <div className="absolute z-20 w-full mt-1 bg-[var(--p5r-black)] border border-[var(--p5r-gray)] rounded-lg max-h-64 overflow-y-auto shadow-xl">
-                        {personaSearchResults.map((name, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              if (!selectedPersonas.includes(name)) {
-                                setSelectedPersonas(prev => [...prev, name]);
-                              }
-                              setPersonaSearchResults([]);
-                            }}
-                            className="w-full px-4 py-3 text-left hover:bg-[var(--p5r-gray)] transition-colors text-[var(--p5r-light)]"
-                          >
-                            {name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {selectedPersonas.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedPersonas.map((name, idx) => (
-                        <span 
-                          key={idx}
-                          className="px-3 py-1.5 bg-[var(--p5r-red)]/20 border border-[var(--p5r-red)]/50 text-[var(--p5r-red)] text-sm rounded-lg flex items-center gap-2"
-                        >
-                          {name}
-                          <button
-                            onClick={() => setSelectedPersonas(prev => prev.filter(p => p !== name))}
-                            className="hover:text-white"
-                          >
-                            ✕
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+            {modalType && (
+              <FilterModal
+                type={modalType}
+                selectedSkills={selectedSkills}
+                selectedTrait={selectedTrait}
+                selectedPersonas={selectedPersonas}
+                onClose={() => setModalType(null)}
+                onSelectSkill={(skill) => setSelectedSkills(prev => prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill])}
+                onSelectTrait={(trait) => { setSelectedTrait(prev => prev === trait ? '' : trait); }}
+                onSelectPersona={(persona) => setSelectedPersonas(prev => prev.includes(persona) ? prev.filter(p => p !== persona) : [...prev, persona])}
+                allSkills={uniqueSkills}
+                allTraits={allTraits}
+                allPersonas={sortedPersonas}
+                getPersonaName={getPersonaName}
+                getSkillName={getSkillName}
+                ui={ui}
+                lang={lang}
+              />
             )}
 
             {paths.length > 0 && (
               <div className="space-y-3">
-                <h2 className="text-lg font-semibold text-[var(--p5r-yellow)]">
+                <h2 className="text-lg font-semibold text-[var(--p5r-yellow)] italic">
                   {ui.foundPaths.replace('{count}', String(paths.length))}
                 </h2>
                 {paths.slice(0, 10).map((path, idx) => (
-                  <div key={idx} className="fusion-card" style={{ animationDelay: `${idx * 50}ms` }}>
+                  <div key={idx} className="fusion-card p5r-tilt" style={{ animationDelay: `${idx * 50}ms` }}>
                     <FusionPathCard 
                       path={path} 
                       index={idx} 
@@ -695,8 +484,11 @@ export default function FusionPage() {
             )}
 
             {!loading && paths.length === 0 && selectedPersona && (
-              <div className="text-center py-8 text-[var(--p5r-gray)]">
-                {ui.noPaths}
+              <div className="text-center py-12 bg-[var(--p5r-black)] rounded-2xl border-2 border-dashed border-[var(--p5r-gray)]">
+                <div className="star-loader mx-auto mb-4 opacity-20 grayscale" />
+                <p className="text-[var(--p5r-gray)] font-medium italic">
+                  {ui.noPaths}
+                </p>
               </div>
             )}
           </div>
