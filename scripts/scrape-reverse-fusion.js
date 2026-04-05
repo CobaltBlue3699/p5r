@@ -6,14 +6,10 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
-
 const OUTPUT_FILE = path.join(ROOT_DIR, 'lib/reverse-fusion.json');
 
 function loadProgress() {
-  if (fs.existsSync(OUTPUT_FILE)) {
-    return JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf-8'));
-  }
-  return {};
+  return fs.existsSync(OUTPUT_FILE) ? JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf-8')) : {};
 }
 
 function saveProgress(data) {
@@ -22,108 +18,71 @@ function saveProgress(data) {
 
 async function scrapeReverseFusion(personaName) {
   const url = `https://wiki.biligame.com/persona/P5R/${encodeURIComponent(personaName)}`;
-  
   try {
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      timeout: 15000
-    });
-    
+    const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 });
     const $ = cheerio.load(response.data);
     const recipes = [];
     
-    const tables = $('table');
     let targetTable = null;
-    
-    tables.each((i, el) => {
-      if ($(el).text().includes('素材1+素材2')) {
+    $('table').each((i, el) => {
+      const text = $(el).text();
+      // 模糊匹配包含 素材1 和 素材2 的表格，且通常会有 "反向合成" 字样
+      if (text.includes('素材1') && text.includes('素材2') && (text.includes('反向合成') || text.includes('素材1+素材2'))) {
         targetTable = $(el);
       }
     });
-    
-    if (!targetTable) {
-      return recipes;
-    }
-    
-    targetTable.find('tbody tr').each((idx, row) => {
-      if (idx === 0) return;
-      
+
+    if (!targetTable) return [];
+
+    targetTable.find('tr').each((idx, row) => {
       const cells = $(row).find('td');
-      if (cells.length < 7) return;
+      // 跳过表头行：如果包含 "素材" 或 "价格" 字样
+      const rowText = $(row).text();
+      if (rowText.includes('素材') || rowText.includes('价格') || rowText.includes('种族')) return;
       
-      const price = $(cells[0]).text().trim().replace(/,/g, '');
-      const arcana1 = $(cells[1]).text().trim();
-      const level1 = $(cells[2]).text().trim();
-      const name1 = $(cells[3]).text().trim();
-      const arcana2 = $(cells[4]).text().trim();
-      const level2 = $(cells[5]).text().trim();
-      const name2 = $(cells[6]).text().trim();
-      
-      if (name1 && name2) {
-        recipes.push({
-          price: parseInt(price) || 0,
-          ingredient1: { name: name1, level: parseInt(level1) || 0, arcana: arcana1 },
-          ingredient2: { name: name2, level: parseInt(level2) || 0, arcana: arcana2 }
-        });
+      if (cells.length >= 7) {
+        const price = $(cells[0]).text().trim().replace(/,/g, '');
+        const arcana1 = $(cells[1]).text().trim();
+        const level1 = $(cells[2]).text().trim();
+        const name1 = $(cells[3]).text().trim();
+        const arcana2 = $(cells[4]).text().trim();
+        const level2 = $(cells[5]).text().trim();
+        const name2 = $(cells[6]).text().trim();
+        
+        if (name1 && name2 && name1 !== '素材1' && name2 !== '素材2') {
+          recipes.push({
+            price: parseInt(price) || 0,
+            ingredient1: { name: name1, level: parseInt(level1) || 0, arcana: arcana1 },
+            ingredient2: { name: name2, level: parseInt(level2) || 0, arcana: arcana2 }
+          });
+        }
       }
     });
-    
     return recipes;
   } catch (error) {
-    console.error(`Error scraping ${personaName}:`, error.message);
+    console.error(`Error ${personaName}:`, error.message);
     return null;
   }
 }
 
 async function main() {
-  const personasPath = path.join(ROOT_DIR, 'lib/personas.json');
-  const personas = JSON.parse(fs.readFileSync(personasPath, 'utf-8'));
+  const personas = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'lib/personas.json'), 'utf-8'));
+  let data = loadProgress();
+  // 为了确保修复效果，我们强制重新抓取几个关键面具，或者如果传入参数则只抓取特定面具
+  const forceScrape = ['辉夜', '亚森', '伊邪那岐', '俄耳普斯'];
   
-  console.log(`Loaded ${personas.length} personas`);
-  
-  let reverseFusionData = loadProgress();
-  const processed = new Set(Object.keys(reverseFusionData));
-  
-  let hasRecipes = processed.size;
-  let idx = 0;
-  
-  for (const persona of personas) {
-    if (processed.has(persona.name_cn)) {
-      idx++;
-      continue;
+  for (const p of personas) {
+    if (data[p.name_cn] && data[p.name_cn].length > 0 && !forceScrape.includes(p.name_cn)) continue;
+    
+    console.log(`Scraping ${p.name_cn}...`);
+    const recipes = await scrapeReverseFusion(p.name_cn);
+    if (recipes !== null) {
+      data[p.name_cn] = recipes;
+      console.log(`  ✓ ${recipes.length} recipes`);
+      saveProgress(data);
     }
-    
-    const recipes = await scrapeReverseFusion(persona.name_cn);
-    
-    if (recipes === null) {
-      console.log(`⏳ ${persona.name_cn}: retry later`);
-      await new Promise(r => setTimeout(r, 2000));
-      continue;
-    }
-    
-    if (recipes.length > 0) {
-      reverseFusionData[persona.name_cn] = recipes;
-      console.log(`✓ ${persona.name_cn}: ${recipes.length} recipes`);
-      hasRecipes++;
-    } else {
-      reverseFusionData[persona.name_cn] = [];
-      console.log(`○ ${persona.name_cn}: no recipes`);
-    }
-    
-    saveProgress(reverseFusionData);
-    processed.add(persona.name_cn);
-    idx++;
-    
-    if (idx % 10 === 0) {
-      console.log(`Progress: ${idx}/${personas.length} (${hasRecipes} with recipes)`);
-    }
-    
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 1000));
   }
-  
-  console.log(`\nCompleted! Total personas with recipes: ${hasRecipes}`);
 }
 
-main().catch(console.error);
+main();
