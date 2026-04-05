@@ -47,12 +47,13 @@ export default function PersonaList({ personas, lang = 'tw' }: PersonaListProps)
     return counts;
   }, [personas]);
   
+  const personasInArcana = useMemo(() => {
+    if (!selectedArcana) return personas;
+    return personas.filter(p => p.arcana === selectedArcana);
+  }, [personas, selectedArcana]);
+
   const filteredPersonas = useMemo(() => {
-    let result = personas;
-    
-    if (selectedArcana) {
-      result = result.filter(p => p.arcana === selectedArcana);
-    }
+    let result = personasInArcana;
     
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -76,7 +77,7 @@ export default function PersonaList({ personas, lang = 'tw' }: PersonaListProps)
     }
     
     return result;
-  }, [personas, selectedArcana, searchQuery, sortBy]);
+  }, [personasInArcana, searchQuery, sortBy, lang]);
   
   return (
     <>
@@ -127,7 +128,7 @@ export default function PersonaList({ personas, lang = 'tw' }: PersonaListProps)
         </div>
         
         <div className="flex items-center justify-between text-xs font-bold tracking-widest text-[var(--p5r-yellow)] uppercase opacity-80 italic">
-          <span>{ui.showing.replace('{filtered}', String(filteredPersonas.length)).replace('{total}', String(personas.length))}</span>
+          <span>{ui.showing.replace('{filtered}', String(filteredPersonas.length)).replace('{total}', String(personasInArcana.length))}</span>
         </div>
       </div>
       
