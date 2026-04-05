@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { findFusionPaths, clearFusionCache } from '../lib/fusion';
+import { getFusionResult } from '../lib/fusion-matrix';
 
 describe('Fusion Path Finder', () => {
   beforeEach(() => {
@@ -113,38 +114,18 @@ describe('Fusion Path Finder', () => {
     expect(blsPaths.length).toBeGreaterThan(0);
   });
 
-  it('should find Orpheus with skills and trait', () => {
-    clearFusionCache();
+  it('should debug fusion matrix for 月亮+愚者', () => {
+    // User says in game: 女梦魔(Lv7, 月亮) + 俄耳甫斯·贼神F(Lv13, 愚者) = 大天使
+    // But our fusion matrix says: 月亮 + 愚者 = 隐士 (not 正义)
+    // Reverse fusion says: 阴魔罗鬼(月亮) + 背负怪(愚者) = 大天使
     
-    // Test with TW inputs (what the UI sends)
-    const paths = findFusionPaths('欧若博司', { 
-      maxSteps: 2,
-      requiredSkills: ['新華彩樂段', '輝箭'],
-      requiredTrait: '萬夫莫敵'
-    });
+    const result1 = getFusionResult('月亮', '愚者');
+    console.log('月亮+愚者 =', result1);
     
-    console.log('Orpheus paths with TW filter:', paths.length);
-    if (paths.length > 0) {
-      console.log('First path:', paths[0].steps.map(s => s.personaA.name_cn + '+' + s.personaB.name_cn));
-    }
+    const result2 = getFusionResult('愚者', '月亮');
+    console.log('愚者+月亮 =', result2);
     
-    // Also test with CN inputs
-    clearFusionCache();
-    const pathsCN = findFusionPaths('欧若博司', { 
-      maxSteps: 2,
-      requiredSkills: ['新华彩乐段', '辉箭'],
-      requiredTrait: '万夫莫敌'
-    });
-    console.log('Orpheus paths with CN filter:', pathsCN.length);
-    
-    // Test without any filters
-    clearFusionCache();
-    const pathsNoFilter = findFusionPaths('欧若博司', { maxSteps: 2 });
-    console.log('Orpheus paths without filter:', pathsNoFilter.length);
-    if (pathsNoFilter.length > 0) {
-      console.log('First path:', pathsNoFilter[0].steps.map(s => s.personaA.name_cn + '+' + s.personaB.name_cn));
-    }
-    
-    expect(pathsNoFilter.length).toBeGreaterThan(0);
+    expect(result1).toBe('正义');
+    expect(result2).toBe('正义');
   });
 });
