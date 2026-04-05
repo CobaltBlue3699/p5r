@@ -104,7 +104,7 @@ export const ARCANA_COLORS: Record<string, string> = {
 };
 
 export const NON_FUSIBLE_PERSONAS = [
-  '卡门', '赛莱斯廷', '赫卡忒', '迪亚哥', '墨丘利', '佐罗'
+  '卡门', '赛莱斯廷', '赫卡忒', '迪亚哥', '墨丘利', '佐罗', '琼安'
 ] as const;
 
 export type ResistType = 'weak' | 'resist' | 'repel' | 'absorb' | 'null' | 'block' | null;
