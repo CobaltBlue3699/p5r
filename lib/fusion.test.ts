@@ -153,4 +153,25 @@ describe('Fusion Path Finder', () => {
     // At least one should work
     expect(paths2.length).toBeGreaterThan(0);
   });
+
+  it('should filter paths by requiredPersonas', () => {
+    clearFusionCache();
+    // Find paths to 亚森 that MUST include 欧若博司
+    // Use maxSteps=2 to avoid OOM issues in test
+    const paths = findFusionPaths('亚森', { maxSteps: 2, requiredPersonas: ['欧若博司'] });
+    console.log('亚森 requiring 欧若博司 (maxSteps=2):', paths.length);
+    
+    // All paths should contain 欧若博司
+    const pathsWithHolder = paths.filter(p => 
+      p.steps.some(step => 
+        step.personaA.name_cn === '欧若博司' || 
+        step.personaB.name_cn === '欧若博司' ||
+        step.resultPersona.name_cn === '欧若博司'
+      )
+    );
+    console.log('Paths containing 欧若博司:', pathsWithHolder.length);
+    
+    expect(paths.length).toBeGreaterThan(0);
+    expect(pathsWithHolder.length).toBe(paths.length);
+  });
 });

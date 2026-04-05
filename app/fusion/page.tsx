@@ -24,6 +24,7 @@ const UI_TW = {
   maxSteps: '最大合成步驟',
   skillFilter: '技能篩選',
   traitFilter: '特性篩選',
+  personaFilter: '面具篩選',
   findPaths: '查詢合成路徑',
   calculating: '計算中...',
   foundPaths: '找到 {count} 條合成路徑',
@@ -36,11 +37,14 @@ const UI_TW = {
   selectPersona: '選擇人格面具',
   requiredSkill: '必備技能',
   requiredTrait: '必備特性',
+  requiredPersona: '必備面具',
   selectSkill: '選擇技能...',
   selectTrait: '選擇特性...',
+  selectPersona2: '選擇面具...',
   clear: '清除',
   noSkillFilter: '不使用技能篩選',
   noTraitFilter: '不使用特性篩選',
+  noPersonaFilter: '不使用面具篩選',
   lang: '語言',
   switchLang: '切換語言'
 };
@@ -52,6 +56,7 @@ const UI_CN = {
   maxSteps: '最大合成步骤',
   skillFilter: '技能筛选',
   traitFilter: '特性筛选',
+  personaFilter: '面具筛选',
   findPaths: '查找合成路径',
   calculating: '计算中...',
   foundPaths: '找到 {count} 条合成路径',
@@ -64,11 +69,14 @@ const UI_CN = {
   selectPersona: '选择人格面具',
   requiredSkill: '必备技能',
   requiredTrait: '必备特性',
+  requiredPersona: '必备面具',
   selectSkill: '选择技能...',
   selectTrait: '选择特性...',
+  selectPersona2: '选择面具...',
   clear: '清除',
   noSkillFilter: '不使用技能筛选',
   noTraitFilter: '不使用特性筛选',
+  noPersonaFilter: '不使用面具筛选',
   lang: '语言',
   switchLang: '切换语言'
 };
@@ -85,13 +93,16 @@ export default function FusionPage() {
   const [loading, setLoading] = useState(false);
   const [showSkillFilter, setShowSkillFilter] = useState(false);
   const [showTraitFilter, setShowTraitFilter] = useState(false);
+  const [showPersonaFilter, setShowPersonaFilter] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedTrait, setSelectedTrait] = useState('');
+  const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
   const [modalPersona, setModalPersona] = useState<Persona | null>(null);
   const [sortBy, setSortBy] = useState<'level' | 'name'>('level');
   const [skillSearchResults, setSkillSearchResults] = useState<string[]>([]);
   const [traitSearchQuery, setTraitSearchQuery] = useState('');
   const [traitSearchResults, setTraitSearchResults] = useState<string[]>([]);
+  const [personaSearchResults, setPersonaSearchResults] = useState<string[]>([]);
 
   const ui = UI[lang];
   const allPersonas = useMemo(() => getFusiblePersonas(), []);
@@ -190,7 +201,8 @@ export default function FusionPage() {
       const foundPaths = findFusionPaths(selectedPersona.name_cn, {
         maxSteps: 5,
         requiredSkills: selectedSkills.length > 0 ? selectedSkills : undefined,
-        requiredTrait: selectedTrait || undefined
+        requiredTrait: selectedTrait || undefined,
+        requiredPersonas: selectedPersonas.length > 0 ? selectedPersonas : undefined
       });
       
       console.log('[Fusion] Found', foundPaths.length, 'paths');
@@ -201,7 +213,7 @@ export default function FusionPage() {
       setPaths(foundPaths);
       setLoading(false);
     }, 50);
-  }, [selectedPersona, selectedSkills, selectedTrait]);
+  }, [selectedPersona, selectedSkills, selectedTrait, selectedPersonas]);
 
   const toggleSkill = (skill: string) => {
     setSelectedSkills(prev => 
@@ -407,6 +419,17 @@ export default function FusionPage() {
               </button>
 
               <button
+                onClick={() => setShowPersonaFilter(!showPersonaFilter)}
+                className={`px-4 py-2.5 rounded-lg border transition-all duration-200 text-sm font-medium hover:scale-105 active:scale-95 ${
+                  showPersonaFilter 
+                    ? 'bg-[var(--p5r-red)] border-[var(--p5r-red)] text-white shadow-lg shadow-[var(--p5r-red)]/30' 
+                    : 'border-[var(--p5r-gray)] text-[var(--p5r-light)] hover:border-[var(--p5r-red)] hover:shadow-lg hover:shadow-[var(--p5r-red)]/20'
+                }`}
+              >
+                {ui.personaFilter} {selectedPersonas.length > 0 && `(${selectedPersonas.length})`}
+              </button>
+
+              <button
                 onClick={handleFindPaths}
                 disabled={!selectedPersona || loading}
                 className="px-8 py-3 bg-[var(--p5r-red)] text-white font-bold rounded-xl hover:bg-[var(--p5r-red)]/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95 text-base shadow-lg hover:shadow-[var(--p5r-red)]/30"
@@ -577,6 +600,73 @@ export default function FusionPage() {
                           </button>
                         ))}
                       </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {showPersonaFilter && (
+              <div className="bg-[var(--p5r-black)] rounded-xl p-4 border border-[var(--p5r-gray)]">
+                <div className="space-y-3">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder={ui.selectPersona2}
+                      className="w-full px-4 py-3 bg-[var(--p5r-dark)] border border-[var(--p5r-gray)] rounded-lg text-[var(--p5r-light)] placeholder-[var(--p5r-gray)] focus:border-[var(--p5r-red)] focus:outline-none text-base"
+                      onChange={(e) => {
+                        const q = e.target.value.toLowerCase();
+                        const filtered = sortedPersonas.filter(p => 
+                          getPersonaName(p).toLowerCase().includes(q)
+                        ).slice(0, 30).map(p => getPersonaName(p));
+                        setPersonaSearchResults(filtered);
+                      }}
+                    />
+                    {selectedPersonas.length > 0 && (
+                      <button
+                        onClick={() => setSelectedPersonas([])}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--p5r-gray)] hover:text-[var(--p5r-light)]"
+                      >
+                        ✕
+                      </button>
+                    )}
+                    {personaSearchResults.length > 0 && (
+                      <div className="absolute z-20 w-full mt-1 bg-[var(--p5r-black)] border border-[var(--p5r-gray)] rounded-lg max-h-64 overflow-y-auto shadow-xl">
+                        {personaSearchResults.map((name, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              if (!selectedPersonas.includes(name)) {
+                                setSelectedPersonas(prev => [...prev, name]);
+                              }
+                              setPersonaSearchResults([]);
+                            }}
+                            className="w-full px-4 py-3 text-left hover:bg-[var(--p5r-gray)] transition-colors text-[var(--p5r-light)]"
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {selectedPersonas.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedPersonas.map((name, idx) => (
+                        <span 
+                          key={idx}
+                          className="px-3 py-1.5 bg-[var(--p5r-red)]/20 border border-[var(--p5r-red)]/50 text-[var(--p5r-red)] text-sm rounded-lg flex items-center gap-2"
+                        >
+                          {name}
+                          <button
+                            onClick={() => setSelectedPersonas(prev => prev.filter(p => p !== name))}
+                            className="hover:text-white"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
                     </div>
                   )}
                 </div>
