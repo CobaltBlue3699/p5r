@@ -193,6 +193,11 @@ export default function FusionPage() {
         requiredTrait: selectedTrait || undefined
       });
       
+      console.log('[Fusion] Found', foundPaths.length, 'paths');
+      foundPaths.forEach((p, i) => {
+        console.log(`Path ${i+1}:`, p.steps.map(s => `${s.personaA.name_cn}+${s.personaB.name_cn}`).join(' -> '));
+      });
+      
       setPaths(foundPaths);
       setLoading(false);
     }, 50);
