@@ -119,10 +119,6 @@ describe('Fusion Path Finder', () => {
   });
 
   it('should debug fusion matrix for 月亮+愚者', () => {
-    // User says in game: 女梦魔(Lv7, 月亮) + 俄耳甫斯·贼神F(Lv13, 愚者) = 大天使
-    // But our fusion matrix says: 月亮 + 愚者 = 隐士 (not 正义)
-    // Reverse fusion says: 阴魔罗鬼(月亮) + 背负怪(愚者) = 大天使
-    
     const result1 = getFusionResult('月亮', '愚者');
     console.log('月亮+愚者 =', result1);
     
@@ -131,5 +127,30 @@ describe('Fusion Path Finder', () => {
     
     expect(result1).toBe('正义');
     expect(result2).toBe('正义');
+  });
+
+  it('should find 亚森 with 万夫莫敌的眼神 trait', () => {
+    // Test maxSteps=5 with trait filter (this is what user uses)
+    clearFusionCache();
+    const paths5 = findFusionPaths('亚森', { maxSteps: 5, requiredTrait: '萬夫莫敵的眼神' });  // TW variant like UI
+    console.log('亚森 + 萬夫莫敵的眼神 (TW, maxSteps=5):', paths5.length);
+    
+    // Test with CN variant
+    clearFusionCache();
+    const paths5CN = findFusionPaths('亚森', { maxSteps: 5, requiredTrait: '万夫莫敌的眼神' });
+    console.log('亚森 + 万夫莫敌的眼神 (CN, maxSteps=5):', paths5CN.length);
+    
+    // Test maxSteps=3 with trait filter
+    clearFusionCache();
+    const paths3 = findFusionPaths('亚森', { maxSteps: 3, requiredTrait: '万夫莫敌的眼神' });
+    console.log('亚森 + 万夫莫敌的眼神 (maxSteps=3):', paths3.length);
+    
+    // Test maxSteps=2 with trait filter
+    clearFusionCache();
+    const paths2 = findFusionPaths('亚森', { maxSteps: 2, requiredTrait: '万夫莫敌的眼神' });
+    console.log('亚森 + 万夫莫敌的眼神 (maxSteps=2):', paths2.length);
+    
+    // At least one should work
+    expect(paths2.length).toBeGreaterThan(0);
   });
 });

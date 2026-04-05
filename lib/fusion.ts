@@ -294,11 +294,15 @@ export function findFusionPaths(
     pathCache.set(cacheKey, sorted);
     return sorted;
   }
-  
+
   // BFS for multi-step paths - run when there's a requiredTrait OR requiredSkills
-  if (maxSteps > 1 && (options.requiredTrait || (options.requiredSkills && options.requiredSkills.length > 0))) {
-    const traitFilter = options.requiredTrait || '';
-    const skillsFilter = options.requiredSkills || [];
+  const traitFilter = options.requiredTrait || '';
+  const traitCN = traitFilter ? toCN(traitFilter) : '';
+  const traitTW = traitFilter ? toTW(traitFilter) : '';
+  const skillsFilter = options.requiredSkills || [];
+  
+  // Always run BFS when there's a filter, regardless of maxSteps
+  if (maxSteps > 1 && (traitFilter || skillsFilter.length > 0)) {
     
     // Helper to convert skill name to both CN and TW variants using opencc
     const convertSkillName = (name: string) => {
@@ -323,16 +327,25 @@ export function findFusionPaths(
       }
     }
     
-    // Start BFS from: target arcana personas OR trait-holding personas OR skill-holding personas
-    const startPersonas = allPersonas.filter(p => 
-      p.arcana === targetPersona.arcana || 
-      (traitFilter && personaHasTrait(p, traitFilter)) ||
-      skillHolders.has(p.name_cn)
+    // Start BFS from: trait-holding personas FIRST (for trait filter), then target arcana
+    // This ensures we find paths that START from trait holders and work toward target
+    const traitHolderPersonas = traitFilter 
+      ? allPersonas.filter(p => personaHasTrait(p, traitFilter))
+      : [];
+    
+    const startPersonas = traitFilter 
+      ? [...traitHolderPersonas, ...allPersonas.filter(p => p.arcana === targetPersona.arcana)]
+      : allPersonas.filter(p => 
+          p.arcana === targetPersona.arcana || 
+          skillHolders.has(p.name_cn)
+        );
+    
+    // Remove duplicates based on id
+    const uniqueStartPersonas = startPersonas.filter((p, idx, arr) => 
+      arr.findIndex(x => x.id === p.id) === idx
     );
     
-    console.log('[BFS] Starting from', startPersonas.length, 'personas (target arcana + trait holders + skill holders)');
-    
-    for (const personaA of startPersonas) {
+    for (const personaA of uniqueStartPersonas) {
       bfsQueue.push({
         current: personaA,
         steps: [],
@@ -341,14 +354,18 @@ export function findFusionPaths(
     }
   }
   
-  const maxQueueSize = 5000;
+  const maxQueueSize = 50000;
   let queueIndex = 0;
   
   while (queueIndex < bfsQueue.length && bfsQueue.length < maxQueueSize) {
     const { current, steps, visited } = bfsQueue[queueIndex];
     queueIndex++;
     
-    if (steps.length >= maxSteps) continue;
+    const currentTrait = current.trait || (current as any).trait_tw || '';
+    const currentHasTrait = currentTrait.includes(traitCN) || currentTrait.includes(traitTW);
+    
+    // Skip if we've reached max steps - but FIRST check if we found the target!
+    // (This check happens inside the loop for each fusion result)
     
     for (const personaB of allPersonas) {
       if (visited.has(personaB.id.toString())) continue;
@@ -356,6 +373,7 @@ export function findFusionPaths(
       const result = calculateFusionResult(current, personaB);
       if (!result.resultPersona) continue;
       
+      // Always add path if we found the target, regardless of steps.length
       if (result.resultPersona.id === targetPersona.id) {
         paths.push({
           steps: [...steps, {
@@ -368,25 +386,46 @@ export function findFusionPaths(
           totalPrice: steps.reduce((sum, s) => sum + s.price, 0) + result.price,
           targetPersona
         });
-      } else if (result.resultPersona.arcana === targetPersona.arcana && result.resultPersona.id !== targetPersona.id) {
+        continue; // Don't continue from here, move to next personaB
+      }
+      
+      // Only continue searching if we haven't reached maxSteps
+      if (steps.length >= maxSteps - 1) continue;
+      
+      if (result.resultPersona.arcana === targetPersona.arcana && result.resultPersona.id !== targetPersona.id) {
         // Same arcana - add to BFS queue to continue searching
-        if (steps.length < maxSteps - 1) {
-          const newVisited = new Set(visited);
-          newVisited.add(personaB.id.toString());
-          
-          bfsQueue.push({
-            current: result.resultPersona,
-            steps: [...steps, {
-              personaA: current,
-              personaB,
-              resultArcana: result.resultArcana,
-              resultPersona: result.resultPersona,
-              price: result.price
-            }],
-            visited: newVisited
-          });
-        }
-      } else if (options.requiredSkills?.length && steps.length < maxSteps - 1) {
+        const newVisited = new Set(visited);
+        newVisited.add(personaB.id.toString());
+        
+        bfsQueue.push({
+          current: result.resultPersona,
+          steps: [...steps, {
+            personaA: current,
+            personaB,
+            resultArcana: result.resultArcana,
+            resultPersona: result.resultPersona,
+            price: result.price
+          }],
+          visited: newVisited
+        });
+      } else if (options.requiredTrait) {
+        // When there's a trait filter, always continue exploring regardless of arcana
+        // We need to find paths that pass through trait holders
+        const newVisited = new Set(visited);
+        newVisited.add(personaB.id.toString());
+        
+        bfsQueue.push({
+          current: result.resultPersona,
+          steps: [...steps, {
+            personaA: current,
+            personaB,
+            resultArcana: result.resultArcana,
+            resultPersona: result.resultPersona,
+            price: result.price
+          }],
+          visited: newVisited
+        });
+      } else if (options.requiredSkills?.length) {
         // When there's a skill filter, also explore OTHER arcana paths that might lead to skills
         const hasSkill = result.resultPersona.skills?.some(s => {
           const skillName = s.name;
@@ -420,7 +459,7 @@ export function findFusionPaths(
       }
     }
   }
-  
+   
   const sorted = sortPaths(paths, options);
   pathCache.set(cacheKey, sorted);
   
@@ -456,15 +495,14 @@ function sortPaths(paths: FusionPath[], options: FindFusionPathsOptions): Fusion
     const traitTW = toTW(traitInput);
     
     filtered = filtered.filter(p => {
-      for (const step of p.steps) {
+      const pathHasTrait = p.steps.some(step => {
         const allPersonasInStep = [step.personaA, step.personaB, step.resultPersona];
-        const hasTrait = allPersonasInStep.some(ing => {
-          const traitValue = ing?.trait || (ing as any)?.trait_tw;
-          return traitValue && (traitValue.includes(traitCN) || traitValue.includes(traitTW));
+        return allPersonasInStep.some(ing => {
+          const ingTrait = ing?.trait || (ing as any)?.trait_tw || '';
+          return ingTrait.includes(traitCN) || ingTrait.includes(traitTW);
         });
-        if (hasTrait) return true;
-      }
-      return false;
+      });
+      return pathHasTrait;
     });
   }
 
