@@ -1,10 +1,35 @@
 export interface PersonaSkill {
+  id?: number;
   name: string;
   name_tw?: string;
-  cost: string;
+  element?: string;
+  cost: string | null;
   unlock_level: number | null;
-  description: string;
-  description_tw?: string;
+  description: string | null;
+  description_tw?: string | null;
+}
+
+export interface FusionStep {
+  personaA: Persona;
+  personaB: Persona;
+  resultPersona: Persona;
+  price: number;
+  skillsInherited: string[];
+}
+
+export interface FusionPath {
+  steps: FusionStep[];
+  totalPrice: number;
+  finalPersona: Persona;
+}
+
+export interface FusionSearchOptions {
+  maxSteps?: number;
+  requiredTrait?: string;
+  requiredSkills?: string[];
+  requiredPersonas?: string[];
+  minLevel?: number;
+  maxLevel?: number;
 }
 
 export interface ReverseFusionIngredient {
@@ -38,33 +63,35 @@ export interface Persona {
   nuke_resist: string | null;
   bless_resist: string | null;
   curse_resist: string | null;
+  hp?: number | null;
+  sp?: number | null;
+  strength?: number;
+  magic?: number;
+  endurance?: number;
+  agility?: number;
+  luck?: number;
+  trait?: string | null;
+  trait_tw?: string | null;
+  trait_desc?: string | null;
+  trait_desc_tw?: string | null;
+  item_name?: string | null;
+  item_name_tw?: string | null;
+  item_desc?: string | null;
+  inherit_phys?: number;
+  inherit_gun?: number;
+  inherit_fire?: number;
+  inherit_ice?: number;
+  inherit_elec?: number;
+  inherit_wind?: number;
+  inherit_psy?: number;
+  inherit_nuke?: number;
+  inherit_bless?: number;
+  inherit_curse?: number;
+  inherit_abnormal?: number;
+  inherit_recovery?: number;
   image_url: string | null;
   local_image_path: string | null;
   wiki_url: string | null;
-  strength: number;
-  magic: number;
-  endurance: number;
-  agility: number;
-  luck: number;
-  trait: string | null;
-  trait_tw?: string;
-  trait_desc: string | null;
-  trait_desc_tw?: string;
-  item_name: string | null;
-  item_name_tw?: string;
-  item_desc: string | null;
-  inherit_phys: number;
-  inherit_gun: number;
-  inherit_fire: number;
-  inherit_ice: number;
-  inherit_elec: number;
-  inherit_wind: number;
-  inherit_psy: number;
-  inherit_nuke: number;
-  inherit_bless: number;
-  inherit_curse: number;
-  inherit_abnormal: number;
-  inherit_recovery: number;
   skills: PersonaSkill[];
   reverseRecipes?: ReverseFusionRecipe[];
   cannotFuse?: boolean;

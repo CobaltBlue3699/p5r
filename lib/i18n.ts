@@ -39,13 +39,13 @@ export function getPersonaArcana(p: Persona): string {
 export function getPersonaTrait(p: Persona): string | null {
   const lang = getLang();
   if (lang === 'tw' && p.trait_tw) return p.trait_tw;
-  return p.trait;
+  return p.trait ?? null;
 }
 
 export function getPersonaTraitDesc(p: Persona): string | null {
   const lang = getLang();
   if (lang === 'tw' && p.trait_desc_tw) return p.trait_desc_tw;
-  return p.trait_desc;
+  return p.trait_desc ?? null;
 }
 
 export function getSkillName(s: PersonaSkill): string {
@@ -57,13 +57,13 @@ export function getSkillName(s: PersonaSkill): string {
 export function getSkillDesc(s: PersonaSkill): string {
   const lang = getLang();
   if (lang === 'tw' && s.description_tw) return s.description_tw;
-  return s.description;
+  return s.description ?? '';
 }
 
 export function getItemName(p: Persona): string | null {
   const lang = getLang();
   if (lang === 'tw' && p.item_name_tw) return p.item_name_tw;
-  return p.item_name;
+  return p.item_name ?? null;
 }
 
 export function getPersonaImage(p: Persona): string | null {

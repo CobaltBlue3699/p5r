@@ -27,15 +27,99 @@ async function exportToJson() {
   const buffer = fs.readFileSync(DB_PATH);
   const db = new SQL.Database(buffer);
   
-  const result = db.exec('SELECT * FROM personas ORDER BY level, name_cn');
+  // Load fusion_recipes from database
+  const fusionRecipes = {};
+  const recipesResult = db.exec(`
+    SELECT 
+      p.name_cn,
+      fr.price,
+      pa.name_cn as ing1_name,
+      pa.level as ing1_level,
+      a1.name_cn as ing1_arcana,
+      pb.name_cn as ing2_name,
+      pb.level as ing2_level,
+      a2.name_cn as ing2_arcana
+    FROM fusion_recipes fr
+    JOIN personas p ON fr.result_persona_id = p.id
+    JOIN personas pa ON fr.ingredient_a_id = pa.id
+    JOIN arcanas a1 ON pa.arcana_id = a1.id
+    JOIN personas pb ON fr.ingredient_b_id = pb.id
+    JOIN arcanas a2 ON pb.arcana_id = a2.id
+    ORDER BY p.name_cn, fr.price
+  `);
   
-  if (result.length === 0) {
+  if (recipesResult[0]) {
+    recipesResult[0].values.forEach(row => {
+      const [name, price, i1name, i1level, i1arcana, i2name, i2level, i2arcana] = row;
+      if (!fusionRecipes[name]) {
+        fusionRecipes[name] = [];
+      }
+      fusionRecipes[name].push({
+        price,
+        ingredient1: { name: i1name, level: i1level, arcana: i1arcana },
+        ingredient2: { name: i2name, level: i2level, arcana: i2arcana }
+      });
+    });
+  }
+  console.log(`Loaded fusion recipes for ${Object.keys(fusionRecipes).length} personas`);
+  
+  // Query personas with arcana info via JOIN
+  const personasResult = db.exec(`
+    SELECT 
+      p.id,
+      p.name_cn,
+      p.name_en,
+      p.name_jp,
+      p.level,
+      a.name_cn as arcana,
+      a.name_tw as arcana_tw,
+      p.phys_resist,
+      p.gun_resist,
+      p.fire_resist,
+      p.ice_resist,
+      p.elec_resist,
+      p.wind_resist,
+      p.psy_resist,
+      p.nuke_resist,
+      p.bless_resist,
+      p.curse_resist,
+      p.strength,
+      p.magic,
+      p.endurance,
+      p.agility,
+      p.luck,
+      p.hp,
+      p.sp,
+      p.trait,
+      p.trait_desc,
+      p.item_name,
+      p.inherit_phys,
+      p.inherit_gun,
+      p.inherit_fire,
+      p.inherit_ice,
+      p.inherit_elec,
+      p.inherit_wind,
+      p.inherit_psy,
+      p.inherit_nuke,
+      p.inherit_bless,
+      p.inherit_curse,
+      p.inherit_abnormal,
+      p.inherit_recovery,
+      p.image_url,
+      p.local_image_path,
+      p.wiki_url
+    FROM personas p
+    LEFT JOIN arcanas a ON p.arcana_id = a.id
+    ORDER BY p.level, p.name_cn
+  `);
+  
+  if (personasResult.length === 0 || personasResult[0].values.length === 0) {
     console.log('No personas found');
     process.exit(1);
   }
   
-  const columns = result[0].columns;
-  const personas = result[0].values.map(row => {
+  const columns = personasResult[0].columns;
+  let personas = personasResult[0].values.map(row => {
     const obj = {};
     columns.forEach((col, i) => {
       obj[col] = row[i];
@@ -43,65 +127,70 @@ async function exportToJson() {
     return obj;
   });
   
-  // 獲取技能數據
-  const skillsResult = db.exec('SELECT * FROM persona_skills');
-  const skillsMap = {};
+  // Query skills with full skill info via JOINs
+  const skillsResult = db.exec(`
+    SELECT 
+      ps.persona_id,
+      s.id as skill_id,
+      s.name_cn,
+      s.name_tw,
+      s.cost,
+      s.description_cn,
+      s.description_tw,
+      e.name_cn as element,
+      ps.unlock_level
+    FROM persona_skills ps
+    JOIN skills s ON ps.skill_id = s.id
+    LEFT JOIN elements e ON s.element_id = e.id
+    ORDER BY ps.persona_id, ps.unlock_level, s.name_cn
+  `);
   
+  const skillsMap = {};
   if (skillsResult.length > 0) {
-    const skillColumns = skillsResult[0].columns;
     skillsResult[0].values.forEach(row => {
-      const skillObj = {};
-      skillColumns.forEach((col, i) => {
-        skillObj[col] = row[i];
-      });
-      const personaId = skillObj.persona_id;
+      const [personaId, skillId, nameCn, nameTw, cost, descCn, descTw, element, unlockLevel] = row;
       if (!skillsMap[personaId]) {
         skillsMap[personaId] = [];
       }
       skillsMap[personaId].push({
-        name: skillObj.skill_name,
-        cost: skillObj.cost,
-        unlock_level: skillObj.unlock_level,
-        description: skillObj.description
+        id: skillId,
+        name: nameCn,
+        name_tw: nameTw,
+        element: element,
+        cost: cost,
+        description: descCn,
+        description_tw: descTw,
+        unlock_level: unlockLevel
       });
     });
   }
   
-  // 將技能添加到 persona 對象 (過濾無效的技能)
-  personas.forEach(p => {
+  // Build final personas array with skills and reverseRecipes
+  personas = personas.map(p => {
     const skills = skillsMap[p.id] || [];
-    // 過濾掉無效的技能名稱
-    p.skills = skills.filter(s => 
-      s.name && 
-      s.name !== '技能' && 
-      !s.name.includes('[[P5R') && 
-      !s.name.includes('{') &&
-      s.cost !== '×' &&
-      s.cost !== '消耗' &&
-      !['英文名', 'Diego', '五維', '3', '2', 'Mandrake', '拜斯堤', '等级'].includes(s.name) &&
-      !/^\d+$/.test(s.name) &&  // 不是純數字
-      s.name.length < 20 &&  // 過濾太長的異常資料
-      !s.name.includes('五维') &&
-      !s.name.includes('等級')
-    );
     
-    // 添加繁體中文版本
-    p.name_tw = toTW(p.name_cn);
+    // Add traditional Chinese versions
+    p.name_tw = p.name_tw || toTW(p.name_cn);
+    p.arcana_tw = p.arcana_tw || toTW(p.arcana);
     p.trait_tw = toTW(p.trait);
     p.trait_desc_tw = toTW(p.trait_desc);
     p.item_name_tw = toTW(p.item_name);
-    p.arcana_tw = toTW(p.arcana);
     
-    // 技能也需要繁體中文版
-    p.skills = p.skills.map(s => ({
-      ...s,
-      name_tw: toTW(s.name),
-      description_tw: toTW(s.description)
-    }));
+    // Add skills array
+    p.skills = skills;
+    
+    // Add reverse recipes from fusion_recipes table
+    const recipes = fusionRecipes[p.name_cn];
+    if (recipes && recipes.length > 0) {
+      p.reverseRecipes = recipes;
+    }
+    
+    return p;
   });
   
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(personas, null, 2));
-  console.log(`Exported ${personas.length} personas with skills to ${OUTPUT_PATH}`);
+  console.log(`Exported ${personas.length} personas to ${OUTPUT_PATH}`);
+  console.log(`Total skills associations: ${Object.keys(skillsMap).reduce((sum, k) => sum + skillsMap[k].length, 0)}`);
   
   db.close();
 }

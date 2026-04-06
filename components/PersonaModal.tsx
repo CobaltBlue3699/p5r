@@ -101,7 +101,7 @@ export default function PersonaModal({ persona, onClose }: PersonaModalProps) {
             </div>
           </div>
 
-          {persona.strength > 0 && (
+          {(persona.strength ?? 0) > 0 && (
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-[var(--p5r-light)] opacity-80 mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,11 +111,11 @@ export default function PersonaModal({ persona, onClose }: PersonaModalProps) {
               </h3>
               <div className="grid grid-cols-5 gap-2 sm:gap-3">
                 {[
-                  { label: '力量', short: '力', value: persona.strength, color: '#EF4444' },
-                  { label: '魔法', short: '魔', value: persona.magic, color: '#3B82F6' },
-                  { label: '耐力', short: '耐', value: persona.endurance, color: '#22C55E' },
-                  { label: '速度', short: '速', value: persona.agility, color: '#EAB308' },
-                  { label: '运气', short: '运', value: persona.luck, color: '#EC4899' },
+                  { label: '力量', short: '力', value: persona.strength ?? 0, color: '#EF4444' },
+                  { label: '魔法', short: '魔', value: persona.magic ?? 0, color: '#3B82F6' },
+                  { label: '耐力', short: '耐', value: persona.endurance ?? 0, color: '#22C55E' },
+                  { label: '速度', short: '速', value: persona.agility ?? 0, color: '#EAB308' },
+                  { label: '运气', short: '运', value: persona.luck ?? 0, color: '#EC4899' },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
                     <div className="text-xs sm:text-sm text-[var(--p5r-light)] opacity-50 mb-1">

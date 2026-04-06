@@ -1,13 +1,15 @@
 import persons from './personas.json' with { type: 'json' };
 import { getFusionResult } from './fusion-matrix';
 import { TREASURE_DEMONS } from './treasure-demons';
-import type { Persona, FusionStep, FusionPath, FusionSearchOptions } from './types';
+import type { Persona, FusionStep, FusionPath, FusionSearchOptions, ReverseFusionRecipe } from './types';
+export type { FusionPath, FusionStep, FusionSearchOptions };
 
-const personas = (persons as any[]).map(p => ({
+const personas: Persona[] = (persons as any[]).map(p => ({
   ...p,
   id: Number(p.id),
   level: Number(p.level),
-})) as Persona[];
+  reverseRecipes: (p as any).reverseRecipes || []
+}));
 
 const personaByName = new Map<string, Persona>();
 personas.forEach(p => personaByName.set(p.name_cn, p));
@@ -50,7 +52,8 @@ export function findFusionPaths(targetName: string, options: FusionSearchOptions
       const newSteps = [newStep, ...steps]; // 將新步驟加在前面
       const newPath: FusionPath = {
         steps: newSteps,
-        totalPrice: newSteps.reduce((sum, s) => sum + s.price, 0)
+        totalPrice: newSteps.reduce((sum, s) => sum + s.price, 0),
+        finalPersona: current
       };
 
       // 檢查是否符合所有條件
