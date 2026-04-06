@@ -129,6 +129,27 @@ describe('Fusion Path Finder', () => {
     expect(result2).toBe('正义');
   });
 
+  it('should correctly fuse 飞天 + 奴延 into 猫妖 (and NOT 辉夜)', () => {
+    // 飞天 (女教皇, 11) + 奴延 (死神, 20)
+    const resultArcana = getFusionResult('女教皇', '死神');
+    expect(resultArcana).toBe('魔术师');
+
+    const paths = findFusionPaths('辉夜', { maxSteps: 1 });
+    const incorrectPath = paths.find(p => 
+      (p.steps[0].personaA.name_cn === '飞天' && p.steps[0].personaB.name_cn === '奴延') ||
+      (p.steps[0].personaA.name_cn === '奴延' && p.steps[0].personaB.name_cn === '飞天')
+    );
+    
+    expect(incorrectPath).toBeUndefined();
+    
+    const catPaths = findFusionPaths('猫妖', { maxSteps: 1 });
+    const correctPath = catPaths.find(p => 
+      (p.steps[0].personaA.name_cn === '飞天' && p.steps[0].personaB.name_cn === '奴延') ||
+      (p.steps[0].personaA.name_cn === '奴延' && p.steps[0].personaB.name_cn === '飞天')
+    );
+    expect(correctPath).toBeDefined();
+  });
+
   it('should find 亚森 with 万夫莫敌的眼神 trait', () => {
     // Test maxSteps=5 with trait filter (this is what user uses)
     clearFusionCache();
