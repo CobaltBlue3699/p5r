@@ -12,9 +12,9 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const WIKI_URL = 'https://wiki.biligame.com/persona/P5R%E6%8A%80%E8%83%BD%E5%88%97%E8%A1%A8';
 
 const ELEMENTS = [
-  { name_cn: '物理' }, { name_cn: '槍械' }, { name_cn: '火焰' }, { name_cn: '冰凍' }, { name_cn: '電擊' },
-  { name_cn: '疾風' }, { name_cn: '念動' }, { name_cn: '核熱' }, { name_cn: '祝福' }, { name_cn: '咒怨' },
-  { name_cn: '異常' }, { name_cn: '恢復' }, { name_cn: '輔助' }, { name_cn: '萬能' }, { name_cn: '被動' }
+  { name_cn: '物理' }, { name_cn: '枪击' }, { name_cn: '火焰' }, { name_cn: '冰冻' }, { name_cn: '电击' },
+  { name_cn: '疾风' }, { name_cn: '念动' }, { name_cn: '核热' }, { name_cn: '祝福' }, { name_cn: '咒怨' },
+  { name_cn: '异常' }, { name_cn: '恢复' }, { name_cn: '辅助' }, { name_cn: '万能' }, { name_cn: '被动' }
 ];
 
 const opencc = Converter({ from: 'cn', to: 'tw' });

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { type Persona, type PersonaSkill, ARCANA_ORDER } from '@/lib/types';
-import { getPersonaName, getSkillName, type Language } from '@/lib/i18n';
+import { getPersonaName, getSkillName, type Language, toTW } from '@/lib/i18n';
 
 interface FilterModalProps {
   type: 'skill' | 'trait' | 'persona';
@@ -22,19 +22,17 @@ interface FilterModalProps {
   lang: Language;
 }
 
-const ARCANAS = ['愚者', '魔术师', '女教皇', '女皇', '皇帝', '教皇', '恋人', '战车', '正义', '隐士', '命运', '力量', '倒悬者', '死神', '节制', '恶魔', '塔', '星星', '月亮', '太阳', '信念', '世界', '顾问官'];
-
 function getSkillCategory(skill: PersonaSkill): string {
-  if (skill.element) return skill.element;
+  if (skill.element) return toTW(skill.element);
   
   // 如果 element 為空，嘗試從描述或名稱猜測 (作為後備)
   const name = skill.name || '';
   const desc = skill.description || '';
   
-  if (desc.includes('恢复') || desc.includes('復原')) return '恢复';
-  if (desc.includes('攻击力提升') || desc.includes('防御力提升')) return '辅助';
-  if (desc.includes('机率陷入') || desc.includes('異常狀態')) return '异常';
-  if (desc.includes('自动生效') || desc.includes('被动')) return '被动';
+  if (desc.includes('恢复') || desc.includes('復原')) return '恢復';
+  if (desc.includes('攻击力提升') || desc.includes('防御力提升')) return '輔助';
+  if (desc.includes('机率陷入') || desc.includes('異常狀態')) return '異常';
+  if (desc.includes('自动生效') || desc.includes('被动')) return '被動';
   
   return '其他';
 }
