@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { type Persona, type PersonaSkill } from '@/lib/types';
+import { type Persona, type PersonaSkill, ARCANA_ORDER } from '@/lib/types';
 import { getPersonaName, getSkillName, type Language } from '@/lib/i18n';
 
 interface FilterModalProps {
@@ -64,7 +64,7 @@ export default function FilterModal({
   const isSelected = (item: string) => type === 'skill' ? selectedSkills.includes(item) : type === 'trait' ? selectedTrait === item : selectedPersonas.includes(item);
 
   const tabs = useMemo(() => {
-    if (type === 'persona') return ['全部', ...ARCANAS];
+    if (type === 'persona') return ['全部', ...ARCANA_ORDER];
     if (type === 'skill') {
       const categories = new Set<string>();
       allSkills.forEach(s => categories.add(getSkillCategory(s)));
