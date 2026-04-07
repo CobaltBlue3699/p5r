@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { type Persona, type PersonaSkill, ARCANA_ORDER } from '@/lib/types';
-import { getPersonaName, getSkillName, type Language, toTW } from '@/lib/i18n';
+import { getPersonaName, getSkillName, type Language } from '@/lib/i18n';
+import { toTW } from '@/lib/cn-tw';
 
 interface FilterModalProps {
   type: 'skill' | 'trait' | 'persona';
