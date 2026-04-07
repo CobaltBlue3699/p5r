@@ -139,8 +139,8 @@ export default function FusionPage() {
       if (seen.has(name)) return false;
       seen.add(name);
       return true;
-    }).slice(0, 100);
-    return skills.map(s => getSkillName(s));
+    });
+    return skills;
   }, [allPersonas, lang]);
 
   const arcanasByLevel = useMemo(() => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { type Persona } from '@/lib/types';
+import { type Persona, type PersonaSkill } from '@/lib/types';
 import { getPersonaName, getSkillName, type Language } from '@/lib/i18n';
 
 interface FilterModalProps {
@@ -13,7 +13,7 @@ interface FilterModalProps {
   onSelectSkill: (skill: string) => void;
   onSelectTrait: (trait: string) => void;
   onSelectPersona: (persona: string) => void;
-  allSkills: string[];
+  allSkills: PersonaSkill[];
   allTraits: { personaName: string; traitValue: string; level: number }[];
   allPersonas: Persona[];
   getPersonaName: (p: Persona) => string;
@@ -24,25 +24,18 @@ interface FilterModalProps {
 
 const ARCANAS = ['愚者', '魔术师', '女教皇', '女皇', '皇帝', '教皇', '恋人', '战车', '正义', '隐士', '命运', '力量', '倒悬者', '死神', '节制', '恶魔', '塔', '星星', '月亮', '太阳', '信念', '世界', '顾问官'];
 
-const SKILL_CATEGORIES: Record<string, string[]> = {
-  '物理': ['斬擊', '砍伐', '射擊', '打擊'],
-  '火焰': ['火焰', '燃燒', '燃燒', '灼熱'],
-  '冰凍': ['冰凍', '冰雪', '寒冷', '冰'],
-  '電擊': ['電擊', '雷電', '閃電', '電氣'],
-  '風壓': ['風壓', '風', '旋風', '颱風'],
-  '念動': ['念動', '精神', '心靈', '精神'],
-  '核熱': ['核熱', '核', '原子', '輻射'],
-  '祝福': ['祝福', '神聖', '光明', '聖'],
-  '咒怨': ['咒怨', '詛咒', '黑暗', '惡魔'],
-  '萬能': ['萬能', 'UP', '真空', '疾風'],
-};
-
-function getSkillCategory(skillName: string): string {
-  for (const [category, keywords] of Object.entries(SKILL_CATEGORIES)) {
-    for (const keyword of keywords) {
-      if (skillName.includes(keyword)) return category;
-    }
-  }
+function getSkillCategory(skill: PersonaSkill): string {
+  if (skill.element) return skill.element;
+  
+  // 如果 element 為空，嘗試從描述或名稱猜測 (作為後備)
+  const name = skill.name || '';
+  const desc = skill.description || '';
+  
+  if (desc.includes('恢复') || desc.includes('復原')) return '恢复';
+  if (desc.includes('攻击力提升') || desc.includes('防御力提升')) return '辅助';
+  if (desc.includes('机率陷入') || desc.includes('異常狀態')) return '异常';
+  if (desc.includes('自动生效') || desc.includes('被动')) return '被动';
+  
   return '其他';
 }
 
@@ -84,33 +77,41 @@ export default function FilterModal({
     let skills = allSkills;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      skills = skills.filter(s => s.toLowerCase().includes(q));
+      skills = skills.filter(s => 
+        getSkillName(s).toLowerCase().includes(q) || 
+        s.name.toLowerCase().includes(q) ||
+        (s.name_tw && s.name_tw.toLowerCase().includes(q))
+      );
     }
     if (activeTab !== '全部') {
       skills = skills.filter(s => getSkillCategory(s) === activeTab);
     }
-    return skills.slice(0, 100);
-  }, [allSkills, searchQuery, activeTab]);
+    return skills;
+  }, [allSkills, searchQuery, activeTab, getSkillName]);
   
   const filteredTraits = useMemo(() => {
-    if (!searchQuery) return allTraits.slice(0, 30);
+    if (!searchQuery) return allTraits;
     const q = searchQuery.toLowerCase();
     return allTraits.filter(t => 
       t.traitValue.toLowerCase().includes(q) || 
       t.personaName.toLowerCase().includes(q)
-    ).slice(0, 30);
+    );
   }, [allTraits, searchQuery]);
 
   const filteredPersonas = useMemo(() => {
     let personas = allPersonas;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      personas = personas.filter(p => getPersonaName(p).toLowerCase().includes(q));
+      personas = personas.filter(p => 
+        getPersonaName(p).toLowerCase().includes(q) ||
+        p.name_cn.toLowerCase().includes(q) ||
+        (p.name_tw && p.name_tw.toLowerCase().includes(q))
+      );
     }
     if (activeTab !== '全部') {
       personas = personas.filter(p => p.arcana === activeTab);
     }
-    return personas.slice(0, 100);
+    return personas;
   }, [allPersonas, searchQuery, activeTab, getPersonaName]);
 
   const renderContent = () => {
@@ -119,34 +120,40 @@ export default function FilterModal({
         return (
           <div className="flex flex-col">
             <div className="flex gap-1 p-2 overflow-x-auto border-b border-[var(--p5r-gray)]">
-              {tabs.map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1.5 text-xs rounded-lg whitespace-nowrap transition-colors ${
-                    activeTab === tab
-                      ? 'bg-[var(--p5r-red)] text-white'
-                      : 'bg-[var(--p5r-dark)] text-[var(--p5r-light)] border border-[var(--p5r-gray)] hover:border-[var(--p5r-red)]'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
+              {tabs.map(tab => {
+                const count = allSkills.filter(s => tab === '全部' || getSkillCategory(s) === tab).length;
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-3 py-1.5 text-xs rounded-lg whitespace-nowrap transition-colors ${
+                      activeTab === tab
+                        ? 'bg-[var(--p5r-red)] text-white'
+                        : 'bg-[var(--p5r-dark)] text-[var(--p5r-light)] border border-[var(--p5r-gray)] hover:border-[var(--p5r-red)]'
+                    }`}
+                  >
+                    {tab} ({count})
+                  </button>
+                );
+              })}
             </div>
             <div className="flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto p-2">
-              {filteredSkills.map(skill => (
-                <button
-                  key={skill}
-                  onClick={() => handleSelect(skill)}
-                  className={`px-3 py-2 text-sm rounded-lg transition-all duration-200 hover:scale-105 ${
-                    isSelected(skill)
-                      ? 'bg-[var(--p5r-red)] text-white shadow-lg'
-                      : 'bg-[var(--p5r-dark)] text-[var(--p5r-light)] border border-[var(--p5r-gray)] hover:border-[var(--p5r-red)]'
-                  }`}
-                >
-                  {skill}
-                </button>
-              ))}
+              {filteredSkills.map(skill => {
+                const name = getSkillName(skill);
+                return (
+                  <button
+                    key={name}
+                    onClick={() => handleSelect(name)}
+                    className={`px-3 py-2 text-sm rounded-lg transition-all duration-200 hover:scale-105 ${
+                      isSelected(name)
+                        ? 'bg-[var(--p5r-red)] text-white shadow-lg'
+                        : 'bg-[var(--p5r-dark)] text-[var(--p5r-light)] border border-[var(--p5r-gray)] hover:border-[var(--p5r-red)]'
+                    }`}
+                  >
+                    {name}
+                  </button>
+                );
+              })}
             </div>
           </div>
         );
@@ -191,20 +198,23 @@ export default function FilterModal({
               })}
             </div>
             <div className="flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto p-2">
-              {filteredPersonas.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => handleSelect(getPersonaName(p))}
-                  className={`px-3 py-2 text-sm rounded-lg transition-all duration-200 hover:scale-105 ${
-                    isSelected(getPersonaName(p))
-                      ? 'bg-[var(--p5r-red)] text-white shadow-lg'
-                      : 'bg-[var(--p5r-dark)] text-[var(--p5r-light)] border border-[var(--p5r-gray)] hover:border-[var(--p5r-red)]'
-                  }`}
-                >
-                  <span>{getPersonaName(p)}</span>
-                  <span className="ml-2 text-xs opacity-70">Lv{p.level}</span>
-                </button>
-              ))}
+              {filteredPersonas.map(p => {
+                const name = getPersonaName(p);
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => handleSelect(name)}
+                    className={`px-3 py-2 text-sm rounded-lg transition-all duration-200 hover:scale-105 ${
+                      isSelected(name)
+                        ? 'bg-[var(--p5r-red)] text-white shadow-lg'
+                        : 'bg-[var(--p5r-dark)] text-[var(--p5r-light)] border border-[var(--p5r-gray)] hover:border-[var(--p5r-red)]'
+                    }`}
+                  >
+                    <span>{name}</span>
+                    <span className="ml-2 text-xs opacity-70">Lv{p.level}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         );
